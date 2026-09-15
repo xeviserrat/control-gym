@@ -31,10 +31,13 @@ DATABASE_URL="..." DIRECT_URL="..." npx prisma migrate deploy
 - Use **Transaction pooler** URL for `DATABASE_URL` (port 6543, `?pgbouncer=true`)
 - Use **Direct** URL for `DIRECT_URL` (migrations)
 - Run `supabase/rls.sql` in SQL Editor (optional)
-- Set `NEXT_PUBLIC_SITE_URL` to your production URL (e.g. `https://control-gym.vercel.app`)
-- Supabase → Authentication → URL Configuration:
-  - **Site URL:** same production URL
-  - **Redirect URLs:** `https://your-domain.vercel.app/auth/callback`
+- Vercel → Environment Variables → scope **Production**:
+  - `NEXT_PUBLIC_SITE_URL` = `https://control-gym-bay.vercel.app`
+  - (keep `http://localhost:3000` only in `.env.local`, not in Vercel Production)
+- Supabase → Authentication → URL Configuration — add **both**:
+  - `http://localhost:3000/auth/callback` (dev)
+  - `https://control-gym-bay.vercel.app/auth/callback` (production)
+  - **Site URL:** production URL (`https://control-gym-bay.vercel.app`)
 
 ## PWA
 

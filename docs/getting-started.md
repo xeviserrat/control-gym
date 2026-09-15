@@ -16,13 +16,15 @@ cp .env.example .env.local
 
 ## Environment variables
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `DATABASE_URL` | PostgreSQL connection (Transaction pooler, port 6543) |
-| `DIRECT_URL` | Direct PostgreSQL connection (port 5432, for migrations) |
-| `NEXT_PUBLIC_SITE_URL` | Site URL for password reset emails (optional locally) |
+| Variable | Development (`.env.local`) | Production (Vercel) |
+|----------|---------------------------|---------------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Same |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | Same |
+| `DATABASE_URL` | Pooler URL (port 6543) | Same |
+| `DIRECT_URL` | Direct URL (port 5432) | Same |
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | `https://control-gym-bay.vercel.app` |
+
+Copy `.env.example` to `.env.local` for local dev. In Vercel, set **Production** env vars separately (Settings → Environment Variables → scope: Production).
 
 ## Database setup
 
@@ -45,4 +47,11 @@ npm run lint   # ESLint
 
 Enable Email provider in Supabase Dashboard → Authentication → Providers.
 
-For password recovery, set Site URL and redirect URLs in Auth settings to include `/auth/callback`.
+**URL Configuration** (Authentication → URL Configuration):
+
+| Setting | Development | Production |
+|---------|-------------|------------|
+| Site URL | `http://localhost:3000` | `https://control-gym-bay.vercel.app` |
+| Redirect URLs | `http://localhost:3000/auth/callback` | `https://control-gym-bay.vercel.app/auth/callback` |
+
+Add **both** redirect URLs so password reset works locally and in production.
