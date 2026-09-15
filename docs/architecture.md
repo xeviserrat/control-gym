@@ -14,8 +14,7 @@
 ## Data flow
 
 ```
-Browser → Next.js Middleware (session refresh)
-       → Server Components (read via Prisma)
+Browser → Server Components (read via Prisma)
        → Server Actions (mutations, auth checks)
        → Prisma → PostgreSQL
 ```
@@ -24,8 +23,9 @@ Auth session is managed by Supabase cookies. Every Server Action calls `requireU
 
 ## Auth gate
 
-- `src/middleware.ts` — refreshes Supabase session, redirects unauthenticated users to `/login`
 - `src/app/(app)/layout.tsx` — calls `requireUser()` for all private routes
+- `src/app/page.tsx` — redirects `/` to `/dashboard` or `/login`
+- Server Actions — `requireUser()` on every mutation
 
 ## Routing
 

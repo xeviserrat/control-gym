@@ -1,7 +1,12 @@
+import { redirect } from "next/navigation";
 import { AuthForm, AuthLink } from "@/components/auth/auth-form";
 import { loginAction } from "@/lib/actions/auth";
+import { getSessionUser } from "@/lib/auth";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const user = await getSessionUser();
+  if (user) redirect("/dashboard");
+
   return (
     <AuthForm
       title="Iniciar sesión"

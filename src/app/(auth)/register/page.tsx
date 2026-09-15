@@ -1,7 +1,12 @@
+import { redirect } from "next/navigation";
 import { AuthForm, AuthLink } from "@/components/auth/auth-form";
 import { registerAction } from "@/lib/actions/auth";
+import { getSessionUser } from "@/lib/auth";
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const user = await getSessionUser();
+  if (user) redirect("/dashboard");
+
   return (
     <AuthForm
       title="Crear cuenta"
