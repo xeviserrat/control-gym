@@ -3,11 +3,22 @@
 ## Vercel
 
 1. Import Git repository
-2. Framework preset: Next.js
-3. Add environment variables from `.env.example`
-4. Deploy
+2. Framework preset: **Next.js** (not Other)
+3. Root Directory: empty
+4. Output Directory: **empty** (do not set `.next` or `out`)
+5. Build Command: `npm run build`
+6. Add environment variables from `.env.example`
+7. Deploy
 
 Build runs `prisma generate` via `postinstall` script.
+
+`vercel.json` in the repo root forces Next.js detection when dashboard settings are wrong.
+
+### Troubleshooting 404
+
+If the build log shows `Build Completed in /vercel/output [90ms]` and no `npm run build` / `Compiled successfully`, Vercel is **not** building Next.js. Fix Framework Preset and Output Directory in **Settings → Build and Deployment**, then redeploy **without** build cache.
+
+A healthy build takes 1–3 minutes and lists routes like `/login`, `/dashboard`.
 
 ## Database migrations (production)
 
