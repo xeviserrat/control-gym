@@ -35,7 +35,12 @@ DATABASE_URL="..." DIRECT_URL="..." npx prisma migrate deploy
 
 ## PWA
 
-`public/manifest.json` is linked in root layout metadata. Add `icon-192.png` and `icon-512.png` to `public/` for install prompts.
+Installable on mobile (Android: “Instalar app”; iOS: Compartir → “Añadir a pantalla de inicio”).
+
+- `public/manifest.json` — app metadata, `standalone` display
+- `public/icon-192.png`, `icon-512.png`, `apple-touch-icon.png` — regenerate with `npm run icons`
+- Service worker via `@serwist/next` (production only; `public/sw.js` is generated at build)
+- Active workouts: progress persisted in DB + `localStorage`; `beforeunload` warns on accidental reload
 
 ## Cost
 

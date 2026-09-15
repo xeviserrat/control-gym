@@ -28,3 +28,10 @@ Routine editor supports "Combinar con..." to group exercises. During workout, se
 ## Progression
 
 Double progression: when all sets reach `repsMax`, suggest weight increase. Otherwise suggest maintaining weight and pushing reps.
+
+## PWA & workout protection
+
+- Install as home-screen app (manifest + service worker in production)
+- Mid-workout: step/phase + draft weight/reps saved to `localStorage`
+- Reload returns to `/train/[id]` via active workout in DB
+- `beforeunload` confirmation and reduced pull-to-refresh while training

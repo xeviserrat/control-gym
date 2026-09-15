@@ -6,22 +6,34 @@ import { RirSelector } from "@/components/workout/rir-selector";
 import { formatRepRange, formatWeight } from "@/lib/utils";
 import type { WorkoutStep } from "@/lib/workout/steps";
 
+export interface SetInputValues {
+  weight: string;
+  reps: string;
+  rir?: number;
+}
+
 interface SetInputPanelProps {
   step: WorkoutStep;
   previousSets?: { weight: number; reps: number }[];
   existingSet?: { weight: number; reps: number; rir: number | null };
-  onValuesChange?: (values: {
-    weight: string;
-    reps: string;
-    rir?: number;
-  }) => void;
+  initialDraft?: SetInputValues;
+  onValuesChange?: (values: SetInputValues) => void;
 }
 
 function getInitialValues(
   step: WorkoutStep,
   previousSets?: { weight: number; reps: number }[],
   existingSet?: { weight: number; reps: number; rir: number | null },
+  initialDraft?: SetInputValues,
 ) {
+  if (initialDraft?.weight || initialDraft?.reps) {
+    return {
+      weight: initialDraft.weight,
+      reps: initialDraft.reps,
+      rir: initialDraft.rir,
+    };
+  }
+
   if (existingSet) {
     return {
       weight: String(existingSet.weight),
@@ -42,11 +54,12 @@ export function SetInputPanel({
   step,
   previousSets,
   existingSet,
+  initialDraft,
   onValuesChange,
 }: SetInputPanelProps) {
   const stepKey = `${step.workoutExerciseId}-${step.setNumber}`;
   const [values, setValues] = useState(() =>
-    getInitialValues(step, previousSets, existingSet),
+    getInitialValues(step, previousSets, existingSet, initialDraft),
   );
 
   useEffect(() => {
@@ -112,9 +125,3 @@ export function SetInputPanel({
     </div>
   );
 }
-
-export type SetInputValues = {
-  weight: string;
-  reps: string;
-  rir?: number;
-};

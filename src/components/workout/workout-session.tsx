@@ -10,6 +10,7 @@ import {
   SetInputPanel,
   type SetInputValues,
 } from "@/components/workout/set-input-panel";
+import { useWorkoutGuard } from "@/hooks/use-workout-guard";
 import { WorkoutSummary } from "@/components/workout/workout-summary";
 import {
   completeSet,
@@ -26,6 +27,7 @@ interface PersistedState {
   workoutId: string;
   stepIndex: number;
   phase: "set" | "rest";
+  draft?: SetInputValues;
 }
 
 function getCompletedSetKey(step: WorkoutStep) {
@@ -43,7 +45,7 @@ function loadPersistedState(
   workoutId: string,
   steps: WorkoutStep[],
   completedKeys: Set<string>,
-): { stepIndex: number; phase: "set" | "rest" } {
+): { stepIndex: number; phase: "set" | "rest"; draft?: SetInputValues } {
   if (typeof window === "undefined") {
     return { stepIndex: findStepIndex(steps, completedKeys), phase: "set" };
   }
@@ -56,6 +58,7 @@ function loadPersistedState(
         return {
           stepIndex: parsed.stepIndex,
           phase: parsed.phase === "rest" ? "rest" : "set",
+          draft: parsed.draft,
         };
       }
     }
@@ -90,6 +93,9 @@ export function WorkoutSession({ session }: { session: WorkoutSessionData }) {
     initialState.phase,
   );
   const [stepIndex, setStepIndex] = useState(initialState.stepIndex);
+  const [savedDraft] = useState(initialState.draft);
+
+  useWorkoutGuard(phase !== "summary");
   const [justCompleted, setJustCompleted] = useState(false);
   const [finishData, setFinishData] = useState<{
     durationSeconds: number;
@@ -106,10 +112,35 @@ export function WorkoutSession({ session }: { session: WorkoutSessionData }) {
   const inputValuesRef = useRef<SetInputValues>({ weight: "", reps: "" });
   const [canSubmit, setCanSubmit] = useState(false);
 
-  const handleValuesChange = useCallback((values: SetInputValues) => {
-    inputValuesRef.current = values;
-    setCanSubmit(Boolean(values.weight && values.reps));
-  }, []);
+  const persistState = useCallback(
+    (
+      index: number,
+      currentPhase: "set" | "rest",
+      draft?: SetInputValues,
+    ) => {
+      const state: PersistedState = {
+        workoutId: session.workout.id,
+        stepIndex: index,
+        phase: currentPhase,
+      };
+      if (draft?.weight || draft?.reps) {
+        state.draft = draft;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    },
+    [session.workout.id],
+  );
+
+  const handleValuesChange = useCallback(
+    (values: SetInputValues) => {
+      inputValuesRef.current = values;
+      setCanSubmit(Boolean(values.weight && values.reps));
+      if (phase === "set") {
+        persistState(stepIndex, "set", values);
+      }
+    },
+    [phase, persistState, stepIndex],
+  );
 
   const currentStep = steps[stepIndex];
   const isLastStep = stepIndex >= steps.length - 1;
@@ -117,18 +148,6 @@ export function WorkoutSession({ session }: { session: WorkoutSessionData }) {
   const completedCount = session.workout.exercises.reduce(
     (acc, we) => acc + we.sets.length,
     0,
-  );
-
-  const persistState = useCallback(
-    (index: number, currentPhase: "set" | "rest") => {
-      const state: PersistedState = {
-        workoutId: session.workout.id,
-        stepIndex: index,
-        phase: currentPhase,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    },
-    [session.workout.id],
   );
 
   function goToStep(index: number) {
@@ -231,6 +250,11 @@ export function WorkoutSession({ session }: { session: WorkoutSessionData }) {
 
   const stepKey = `${currentStep.workoutExerciseId}-${currentStep.setNumber}-${existingSet?.id ?? "new"}`;
 
+  const initialDraft =
+    phase === "set" && stepIndex === initialState.stepIndex
+      ? savedDraft
+      : undefined;
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="border-b border-border px-4 py-3">
@@ -294,6 +318,7 @@ export function WorkoutSession({ session }: { session: WorkoutSessionData }) {
                 step={currentStep}
                 previousSets={prev?.sets}
                 existingSet={existingSet}
+                initialDraft={initialDraft}
                 onValuesChange={handleValuesChange}
               />
             </div>
