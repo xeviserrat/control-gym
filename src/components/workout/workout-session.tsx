@@ -17,46 +17,10 @@ import {
   skipExercise,
   cancelWorkout,
 } from "@/lib/actions/workouts";
+import type { WorkoutSessionData } from "@/lib/workout/types";
 import type { WorkoutStep } from "@/lib/workout/steps";
 
 const STORAGE_KEY = "workout-session-state";
-
-interface SessionData {
-  workout: {
-    id: string;
-    date: Date | string;
-    startedAt: Date | string;
-    routine: { name: string; id: string };
-    exercises: Array<{
-      id: string;
-      exerciseId: string;
-      skipped: boolean;
-      exercise: { name: string };
-      routineExercise: {
-        sets: number;
-        repsMin: number;
-        repsMax: number;
-        restSeconds: number;
-        notes: string | null;
-        isOptional: boolean;
-      } | null;
-      sets: Array<{
-        id: string;
-        setNumber: number;
-        weight: number;
-        reps: number;
-        rir: number | null;
-      }>;
-    }>;
-  };
-  steps: WorkoutStep[];
-  totalSteps: number;
-  completedSets: number;
-  previousPerformance: Record<
-    string,
-    { sets: { weight: number; reps: number }[]; date: Date | string }
-  >;
-}
 
 interface PersistedState {
   workoutId: string;
@@ -102,7 +66,7 @@ function loadPersistedState(
   return { stepIndex: findStepIndex(steps, completedKeys), phase: "set" };
 }
 
-export function WorkoutSession({ session }: { session: SessionData }) {
+export function WorkoutSession({ session }: { session: WorkoutSessionData }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 

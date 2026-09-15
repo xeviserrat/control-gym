@@ -10,7 +10,8 @@ import {
   getProgressionMessage,
   calculateVolume,
 } from "@/lib/workout/progression";
-import { serializeForClient } from "@/lib/serialize";
+import { mapWorkoutSession } from "@/lib/workout/map-session";
+import type { WorkoutSessionData } from "@/lib/workout/types";
 
 const workoutInclude = {
   routine: true,
@@ -114,7 +115,9 @@ export async function startWorkout(routineId: string, date: string) {
   return actionSuccess(workout);
 }
 
-export async function getWorkoutSession(workoutId: string) {
+export async function getWorkoutSession(
+  workoutId: string,
+): Promise<WorkoutSessionData | null> {
   const user = await requireUser();
 
   const workout = await prisma.workout.findFirst({
@@ -156,13 +159,13 @@ export async function getWorkoutSession(workoutId: string) {
     workout.id,
   );
 
-  return serializeForClient({
+  return mapWorkoutSession(
     workout,
     steps,
     totalSteps,
     completedSets,
     previousPerformance,
-  });
+  );
 }
 
 async function getPreviousPerformanceForWorkout(
