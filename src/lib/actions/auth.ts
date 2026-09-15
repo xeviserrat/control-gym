@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfile } from "@/lib/auth";
+import { getSiteUrl } from "@/lib/site-url";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -67,8 +68,9 @@ export async function forgotPasswordAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const siteUrl = await getSiteUrl();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/profile`,
+    redirectTo: `${siteUrl}/auth/callback?next=/profile`,
   });
 
   if (error) return { error: error.message };
