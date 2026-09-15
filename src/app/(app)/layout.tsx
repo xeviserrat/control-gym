@@ -2,7 +2,9 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { requireUser, ensureProfile } from "@/lib/auth";
 import { createExampleRoutineForUser } from "@/lib/seed/create-example-routine";
 
-export default async function AppLayout({ children }: LayoutProps<"/">) {
+export default async function AppLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const user = await requireUser();
   await ensureProfile(user.id, user.email ?? "");
   await createExampleRoutineForUser(user.id);

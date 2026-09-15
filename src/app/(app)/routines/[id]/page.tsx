@@ -6,7 +6,7 @@ import { getExercises } from "@/lib/actions/exercises";
 
 export default async function RoutineDetailPage({
   params,
-}: PageProps<"/routines/[id]">) {
+}: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [routine, exercises] = await Promise.all([
     getRoutineById(id),

@@ -6,7 +6,9 @@ import { TrainSetup } from "@/components/workout/train-setup";
 
 export default async function TrainPage({
   searchParams,
-}: PageProps<"/train">) {
+}: {
+  searchParams: Promise<{ routine?: string }>;
+}) {
   const activeWorkout = await getActiveWorkout();
 
   if (activeWorkout) {

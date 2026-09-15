@@ -4,7 +4,7 @@ import { WorkoutSession } from "@/components/workout/workout-session";
 
 export default async function ActiveWorkoutPage({
   params,
-}: PageProps<"/train/[id]">) {
+}: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getWorkoutSession(id);
   if (!session) notFound();

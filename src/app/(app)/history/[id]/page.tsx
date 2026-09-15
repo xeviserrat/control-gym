@@ -5,7 +5,7 @@ import { formatDate, formatDuration, formatWeight } from "@/lib/utils";
 
 export default async function WorkoutDetailPage({
   params,
-}: PageProps<"/history/[id]">) {
+}: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const workout = await getWorkoutById(id);
   if (!workout || workout.status !== "COMPLETED") notFound();

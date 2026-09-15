@@ -6,7 +6,7 @@ import { ExerciseHistoryChart } from "@/components/exercises/exercise-history-ch
 
 export default async function ExerciseDetailPage({
   params,
-}: PageProps<"/exercises/[id]">) {
+}: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await getExerciseById(id);
   if (!data) notFound();
