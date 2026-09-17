@@ -39,16 +39,14 @@ export function mapWorkoutSession(
         exerciseId: we.exerciseId,
         skipped: we.skipped,
         exercise: { name: we.exercise.name },
-        routineExercise: we.routineExercise
-          ? {
-              sets: we.routineExercise.sets,
-              repsMin: we.routineExercise.repsMin,
-              repsMax: we.routineExercise.repsMax,
-              restSeconds: we.routineExercise.restSeconds,
-              notes: we.routineExercise.notes,
-              isOptional: we.routineExercise.isOptional,
-            }
-          : null,
+        routineExercise: {
+          sets: we.targetSets,
+          repsMin: we.repsMin,
+          repsMax: we.repsMax,
+          restSeconds: we.restSeconds,
+          notes: we.notes,
+          isOptional: we.isOptional,
+        },
         sets: we.sets.map((s) => ({
           id: s.id,
           setNumber: s.setNumber,

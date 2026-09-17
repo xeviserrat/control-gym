@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 import { AppHeader } from "@/components/layout/app-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,18 +25,18 @@ export default async function DashboardPage() {
         </section>
 
         <div className="grid gap-3">
-          <Link href="/train">
+          <AppLink href="/train">
             <Button fullWidth size="lg">
               Let&apos;s Train
             </Button>
-          </Link>
+          </AppLink>
 
           {stats.lastUsedRoutine && (
-            <Link href={`/train?routine=${stats.lastUsedRoutine.id}`}>
+            <AppLink href={`/train?routine=${stats.lastUsedRoutine.id}`}>
               <Button fullWidth size="md" variant="secondary">
                 Última rutina: {stats.lastUsedRoutine.name}
               </Button>
-            </Link>
+            </AppLink>
           )}
         </div>
 
@@ -53,12 +53,12 @@ export default async function DashboardPage() {
               {stats.lastWorkout.durationSeconds &&
                 ` · ${formatDuration(stats.lastWorkout.durationSeconds)}`}
             </p>
-            <Link
+            <AppLink
               href={`/history/${stats.lastWorkout.id}`}
               className="mt-3 inline-block text-sm text-primary"
             >
               Ver detalle
-            </Link>
+            </AppLink>
           </Card>
         )}
 
@@ -70,12 +70,12 @@ export default async function DashboardPage() {
             <p className="mt-1 text-lg font-semibold">
               {stats.latestRoutine.name}
             </p>
-            <Link
+            <AppLink
               href={`/routines/${stats.latestRoutine.id}`}
               className="mt-3 inline-block text-sm text-primary"
             >
               Editar rutina
-            </Link>
+            </AppLink>
           </Card>
         )}
 
@@ -86,13 +86,13 @@ export default async function DashboardPage() {
             </h2>
             <div className="space-y-2">
               {stats.recentExercises.slice(0, 5).map((ex) => (
-                <Link
+                <AppLink
                   key={ex.id}
                   href={`/exercises/${ex.id}`}
                   className="block rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:bg-surface-elevated"
                 >
                   {ex.name}
-                </Link>
+                </AppLink>
               ))}
             </div>
           </section>

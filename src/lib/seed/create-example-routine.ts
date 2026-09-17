@@ -23,11 +23,6 @@ const SUPERSET_PAIRS = [
 ];
 
 export async function createExampleRoutineForUser(userId: string) {
-  const existing = await prisma.routine.findFirst({
-    where: { userId, name: "Torso A" },
-  });
-  if (existing) return existing;
-
   const exerciseMap = new Map<string, string>();
 
   for (const config of TORSO_A_EXERCISES) {

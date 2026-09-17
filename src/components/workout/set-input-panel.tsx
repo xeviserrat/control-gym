@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { LastTimeCollapsible } from "@/components/workout/last-time-collapsible";
+import { ProgressionHint } from "@/components/workout/progression-hint";
 import { RirSelector } from "@/components/workout/rir-selector";
-import { formatRepRange, formatWeight } from "@/lib/utils";
+import { formatRepRange } from "@/lib/utils";
+import {
+  getInSessionProgressionHint,
+  isRepeatingQualifyingPerformance,
+} from "@/lib/workout/progression";
+import { getExerciseTrainingHint } from "@/lib/workout/progression-results";
 import type { WorkoutStep } from "@/lib/workout/steps";
 
 export interface SetInputValues {
@@ -72,6 +79,50 @@ export function SetInputPanel({
     onValuesChange?.(next);
   }
 
+  const progressionHint = useMemo(
+    () =>
+      getInSessionProgressionHint(
+        previousSets,
+        step.repsMin,
+        step.repsMax,
+        step.loadProgression,
+      ),
+    [previousSets, step.repsMin, step.repsMax, step.loadProgression],
+  );
+
+  const trainingHint = useMemo(
+    () =>
+      getExerciseTrainingHint(
+        step.exerciseName,
+        previousSets,
+        step.repsMin,
+        step.repsMax,
+        step.loadProgression,
+      ),
+    [
+      step.exerciseName,
+      previousSets,
+      step.repsMin,
+      step.repsMax,
+      step.loadProgression,
+    ],
+  );
+
+  const weightNum = parseFloat(values.weight);
+  const repsNum = parseInt(values.reps, 10);
+  const showLiveProgressionHint =
+    progressionHint &&
+    previousSets &&
+    !isNaN(weightNum) &&
+    !isNaN(repsNum) &&
+    isRepeatingQualifyingPerformance(
+      weightNum,
+      repsNum,
+      previousSets,
+      step.repsMin,
+      step.repsMax,
+    );
+
   return (
     <div key={stepKey} className="space-y-6">
       <div className="text-center">
@@ -82,18 +133,11 @@ export function SetInputPanel({
       </div>
 
       {previousSets && previousSets.length > 0 && (
-        <div className="rounded-2xl border border-border bg-surface p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Última vez
-          </p>
-          <div className="mt-2 space-y-1">
-            {previousSets.map((s, i) => (
-              <p key={i} className="text-sm">
-                {formatWeight(s.weight)} kg × {s.reps}
-              </p>
-            ))}
-          </div>
-        </div>
+        <LastTimeCollapsible
+          setNumber={step.setNumber}
+          previousSets={previousSets}
+          trainingHint={trainingHint}
+        />
       )}
 
       <div className="grid grid-cols-2 gap-4">
@@ -122,6 +166,15 @@ export function SetInputPanel({
         value={values.rir}
         onChange={(rir) => update({ rir })}
       />
+
+      {showLiveProgressionHint && step.setNumber > 1 && (
+        <ProgressionHint
+          hint={progressionHint}
+          repsMax={step.repsMax}
+          exerciseName={step.exerciseName}
+          compact
+        />
+      )}
     </div>
   );
 }

@@ -1,17 +1,21 @@
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
+import { ExerciseDetailPanel } from "@/components/exercises/exercise-detail-panel";
+import { ExerciseHistoryChart } from "@/components/exercises/exercise-history-chart";
+import { requireUser } from "@/lib/auth";
 import { getExerciseById } from "@/lib/actions/exercises";
 import { formatDate, formatWeight } from "@/lib/utils";
-import { ExerciseHistoryChart } from "@/components/exercises/exercise-history-chart";
 
 export default async function ExerciseDetailPage({
   params,
 }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const user = await requireUser();
   const data = await getExerciseById(id);
   if (!data) notFound();
 
   const { exercise, history } = data;
+  const canEdit = exercise.userId === user.id && !exercise.isGlobal;
 
   const sessionsMap = new Map<
     string,
@@ -47,13 +51,9 @@ export default async function ExerciseDetailPage({
     <>
       <AppHeader title={exercise.name} backHref="/exercises" />
       <main className="space-y-6 px-4 py-6">
-        {exercise.muscleGroup && (
-          <p className="text-sm text-muted-foreground">{exercise.muscleGroup}</p>
-        )}
+        <ExerciseDetailPanel exercise={exercise} canEdit={canEdit} />
 
-        {chartData.length > 1 && (
-          <ExerciseHistoryChart data={chartData} />
-        )}
+        {chartData.length > 1 && <ExerciseHistoryChart data={chartData} />}
 
         <section>
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">

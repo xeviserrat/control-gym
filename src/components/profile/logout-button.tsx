@@ -1,16 +1,16 @@
 "use client";
 
-import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { usePendingAction } from "@/hooks/use-pending-action";
 import { logoutAction } from "@/lib/actions/auth";
 
 export function LogoutButton() {
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = usePendingAction("Cerrando sesión…");
 
   return (
     <form
       action={() =>
-        startTransition(async () => {
+        run(async () => {
           await logoutAction();
         })
       }
@@ -19,9 +19,10 @@ export function LogoutButton() {
         type="submit"
         variant="destructive"
         fullWidth
-        disabled={pending}
+        loading={pending}
+        loadingText="Cerrando sesión…"
       >
-        {pending ? "Cerrando sesión..." : "Cerrar sesión"}
+        Cerrar sesión
       </Button>
     </form>
   );

@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireUser, actionError, actionSuccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { routineSchema, routineExerciseSchema } from "@/lib/validations/routine";
+import { getExerciseRepDefaults } from "@/lib/exercise-utils";
+import {
+  routineSchema,
+  routineExerciseSchema,
+  swapRoutineExerciseSchema,
+} from "@/lib/validations/routine";
 
 const routineInclude = {
   exercises: {
@@ -22,7 +27,11 @@ export async function getRoutines() {
     where: { userId: user.id },
     include: {
       exercises: { include: { exercise: true } },
-      _count: { select: { workouts: true } },
+      _count: {
+        select: {
+          workouts: { where: { status: "COMPLETED" } },
+        },
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -109,15 +118,41 @@ export async function deleteRoutine(id: string) {
   });
   if (!existing) return actionError("Rutina no encontrada");
 
-  const workoutCount = await prisma.workout.count({
-    where: { routineId: id },
+  const inProgressCount = await prisma.workout.count({
+    where: { routineId: id, status: "IN_PROGRESS" },
   });
-  if (workoutCount > 0) {
-    return actionError("No se puede eliminar: tiene entrenamientos registrados");
+  if (inProgressCount > 0) {
+    return actionError(
+      "No se puede eliminar: tienes un entrenamiento en curso con esta rutina",
+    );
   }
 
-  await prisma.routine.delete({ where: { id } });
+  const completedCount = await prisma.workout.count({
+    where: { routineId: id, status: "COMPLETED" },
+  });
+  if (completedCount > 0) {
+    return actionError(
+      "No se puede eliminar: tiene entrenamientos en el historial",
+    );
+  }
+
+  try {
+    await prisma.workout.deleteMany({ where: { routineId: id } });
+    await prisma.routine.delete({ where: { id } });
+
+    const stillExists = await prisma.routine.findFirst({
+      where: { id, userId: user.id },
+    });
+    if (stillExists) {
+      return actionError("No se pudo eliminar la rutina. Inténtalo de nuevo.");
+    }
+  } catch (error) {
+    console.error("deleteRoutine failed:", error);
+    return actionError("No se pudo eliminar la rutina. Inténtalo de nuevo.");
+  }
+
   revalidatePath("/routines");
+  revalidatePath(`/routines/${id}`);
   return actionSuccess(undefined);
 }
 
@@ -212,12 +247,13 @@ export async function addExerciseToRoutine(
   if (!exercise) return actionError("Ejercicio no encontrado");
 
   const maxOrder = routine.exercises[0]?.order ?? 0;
+  const repDefaults = getExerciseRepDefaults(exercise);
 
   const parsed = routineExerciseSchema.safeParse({
     exerciseId: data.exerciseId,
     sets: data.sets ?? 3,
-    repsMin: data.repsMin ?? 8,
-    repsMax: data.repsMax ?? 12,
+    repsMin: data.repsMin ?? repDefaults.repsMin,
+    repsMax: data.repsMax ?? repDefaults.repsMax,
     restSeconds: data.restSeconds ?? 90,
     notes: data.notes,
     isOptional: false,
@@ -238,6 +274,47 @@ export async function addExerciseToRoutine(
   });
 
   revalidatePath(`/routines/${routineId}`);
+  return actionSuccess(routineExercise);
+}
+
+export async function swapRoutineExercise(
+  routineExerciseId: string,
+  newExerciseId: string,
+) {
+  const user = await requireUser();
+
+  const parsed = swapRoutineExerciseSchema.safeParse({
+    routineExerciseId,
+    newExerciseId,
+  });
+  if (!parsed.success) {
+    return actionError(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+
+  const existing = await prisma.routineExercise.findFirst({
+    where: { id: parsed.data.routineExerciseId, routine: { userId: user.id } },
+  });
+  if (!existing) return actionError("Ejercicio no encontrado");
+
+  if (existing.exerciseId === parsed.data.newExerciseId) {
+    return actionError("Ya estás usando este ejercicio");
+  }
+
+  const exercise = await prisma.exercise.findFirst({
+    where: {
+      id: parsed.data.newExerciseId,
+      OR: [{ userId: user.id }, { isGlobal: true }],
+    },
+  });
+  if (!exercise) return actionError("Ejercicio no encontrado");
+
+  const routineExercise = await prisma.routineExercise.update({
+    where: { id: parsed.data.routineExerciseId },
+    data: { exerciseId: parsed.data.newExerciseId },
+    include: { exercise: true },
+  });
+
+  revalidatePath(`/routines/${existing.routineId}`);
   return actionSuccess(routineExercise);
 }
 

@@ -1,10 +1,11 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
+import { AppLink } from "@/components/ui/app-link";
 import { AppHeader } from "@/components/layout/app-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getRoutines } from "@/lib/actions/routines";
 import { RoutineListItem } from "@/components/routines/routine-list-item";
 import { CreateRoutineForm } from "@/components/routines/create-routine-form";
+
+export const dynamic = "force-dynamic";
 
 export default async function RoutinesPage() {
   const routines = await getRoutines();
@@ -28,13 +29,12 @@ export default async function RoutinesPage() {
           </ul>
         )}
 
-        <Link
+        <AppLink
           href="/exercises"
-          className="mt-8 flex items-center justify-center gap-2 text-sm text-primary"
+          className="mt-8 block text-center text-sm text-primary"
         >
-          <Plus className="h-4 w-4" />
-          Biblioteca de ejercicios
-        </Link>
+          Ver biblioteca de ejercicios
+        </AppLink>
       </main>
     </>
   );

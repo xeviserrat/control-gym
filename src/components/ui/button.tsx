@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive" | "outline";
@@ -8,6 +9,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
+  loading?: boolean;
+  loadingText?: string;
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -36,7 +39,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "md",
       fullWidth,
       disabled,
+      loading = false,
+      loadingText,
       type = "button",
+      children,
       ...props
     },
     ref,
@@ -44,9 +50,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       type={type}
-      disabled={disabled}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={cn(
-        "inline-flex items-center justify-center font-medium transition-colors",
+        "inline-flex items-center justify-center gap-2 font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:pointer-events-none disabled:opacity-50",
         variantStyles[variant],
@@ -55,7 +62,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className,
       )}
       {...props}
-    />
+    >
+      {loading ? (
+        <>
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+          {loadingText}
+        </>
+      ) : (
+        children
+      )}
+    </button>
   ),
 );
 

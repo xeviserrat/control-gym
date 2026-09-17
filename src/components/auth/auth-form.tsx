@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
-import Link from "next/link";
+import { useActionState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AppLink } from "@/components/ui/app-link";
+import { useLoading } from "@/components/providers/loading-provider";
 
 interface AuthFormProps {
   title: string;
@@ -27,6 +28,9 @@ export function AuthForm({
   fields,
   footer,
 }: AuthFormProps) {
+  const { startLoading, stopLoading } = useLoading();
+  const loadingActiveRef = useRef(false);
+
   const [state, formAction, pending] = useActionState(
     async (_prev: { error?: string; message?: string } | null, formData: FormData) => {
       const result = await action(formData);
@@ -35,6 +39,16 @@ export function AuthForm({
     },
     null,
   );
+
+  useEffect(() => {
+    if (pending && !loadingActiveRef.current) {
+      loadingActiveRef.current = true;
+      startLoading("Cargando…");
+    } else if (!pending && loadingActiveRef.current) {
+      loadingActiveRef.current = false;
+      stopLoading();
+    }
+  }, [pending, startLoading, stopLoading]);
 
   return (
     <div className="mx-auto w-full max-w-sm px-6 py-12">
@@ -69,8 +83,14 @@ export function AuthForm({
           </p>
         )}
 
-        <Button type="submit" fullWidth size="lg" disabled={pending}>
-          {pending ? "Cargando..." : submitLabel}
+        <Button
+          type="submit"
+          fullWidth
+          size="lg"
+          loading={pending}
+          loadingText="Cargando…"
+        >
+          {submitLabel}
         </Button>
       </form>
 
@@ -87,8 +107,8 @@ export function AuthLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="text-primary hover:underline">
+    <AppLink href={href} className="text-primary hover:underline">
       {children}
-    </Link>
+    </AppLink>
   );
 }

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { AppLink } from "@/components/ui/app-link";
 import { EmptyState } from "@/components/ui/empty-state";
-import { startWorkout } from "@/lib/actions/workouts";
-import Link from "next/link";
+import { RoutineStartHints } from "@/components/workout/routine-start-hints";
+import { useAppRouter } from "@/hooks/use-app-router";
+import { usePendingAction } from "@/hooks/use-pending-action";
+import { getRoutineStartHints, startWorkout } from "@/lib/actions/workouts";
+import type { StartTrainingHint } from "@/lib/workout/progression-results";
 
 interface TrainSetupProps {
   routines: { id: string; name: string; exercises: { id: string }[] }[];
@@ -20,8 +23,32 @@ export function TrainSetup({ routines, preselectedRoutineId }: TrainSetupProps) 
     new Date().toISOString().split("T")[0],
   );
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  const router = useRouter();
+  const [hints, setHints] = useState<StartTrainingHint[]>([]);
+  const [hintsLoading, setHintsLoading] = useState(false);
+  const { pending, run } = usePendingAction("Iniciando entrenamiento…");
+  const router = useAppRouter();
+
+  useEffect(() => {
+    if (!selectedId) {
+      setHints([]);
+      return;
+    }
+
+    let cancelled = false;
+    setHintsLoading(true);
+
+    getRoutineStartHints(selectedId)
+      .then((nextHints) => {
+        if (!cancelled) setHints(nextHints);
+      })
+      .finally(() => {
+        if (!cancelled) setHintsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
 
   if (routines.length === 0) {
     return (
@@ -29,9 +56,9 @@ export function TrainSetup({ routines, preselectedRoutineId }: TrainSetupProps) 
         title="Sin rutinas activas"
         description="Crea y activa una rutina antes de entrenar."
         action={
-          <Link href="/routines">
+          <AppLink href="/routines">
             <Button>Ir a Rutinas</Button>
-          </Link>
+          </AppLink>
         }
       />
     );
@@ -39,7 +66,7 @@ export function TrainSetup({ routines, preselectedRoutineId }: TrainSetupProps) 
 
   function handleStart() {
     setError(null);
-    startTransition(async () => {
+    run(async () => {
       const result = await startWorkout(selectedId, date);
       if (!result.success) {
         setError(result.error);
@@ -76,6 +103,14 @@ export function TrainSetup({ routines, preselectedRoutineId }: TrainSetupProps) 
         </div>
       </section>
 
+      {hintsLoading ? (
+        <p className="text-sm text-muted-foreground">
+          Cargando consejos de la última sesión…
+        </p>
+      ) : (
+        <RoutineStartHints hints={hints} />
+      )}
+
       <section>
         <h2 className="mb-4 text-sm font-medium text-muted-foreground">
           ¿Qué fecha?
@@ -97,10 +132,12 @@ export function TrainSetup({ routines, preselectedRoutineId }: TrainSetupProps) 
       <Button
         size="xl"
         fullWidth
-        disabled={pending || !selectedId}
+        disabled={!selectedId}
+        loading={pending}
+        loadingText="Iniciando…"
         onClick={handleStart}
       >
-        {pending ? "Iniciando..." : "Empezar entrenamiento"}
+        Empezar entrenamiento
       </Button>
     </div>
   );

@@ -14,5 +14,11 @@ export const startWorkoutSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+export const swapWorkoutExerciseSchema = z.object({
+  workoutExerciseId: z.string().uuid(),
+  newExerciseId: z.string().uuid(),
+});
+
 export type CompleteSetInput = z.infer<typeof completeSetSchema>;
 export type StartWorkoutInput = z.infer<typeof startWorkoutSchema>;
+export type SwapWorkoutExerciseInput = z.infer<typeof swapWorkoutExerciseSchema>;

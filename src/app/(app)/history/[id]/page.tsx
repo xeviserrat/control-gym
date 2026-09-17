@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
+import { ProgressionResultsList } from "@/components/workout/progression-results-list";
 import { getWorkoutById } from "@/lib/actions/workouts";
+import { computeWorkoutProgressionResults } from "@/lib/workout/progression-results";
 import { formatDate, formatDuration, formatWeight } from "@/lib/utils";
 
 export default async function WorkoutDetailPage({
@@ -15,6 +17,8 @@ export default async function WorkoutDetailPage({
     0,
   );
 
+  const progressionResults = computeWorkoutProgressionResults(workout.exercises);
+
   return (
     <>
       <AppHeader title="Detalle" backHref="/history" />
@@ -28,6 +32,11 @@ export default async function WorkoutDetailPage({
             {` · ${totalSets} series`}
           </p>
         </div>
+
+        <ProgressionResultsList
+          results={progressionResults}
+          heading="Cómo terminó esta sesión"
+        />
 
         <div className="space-y-6">
           {workout.exercises

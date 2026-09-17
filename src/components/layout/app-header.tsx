@@ -1,5 +1,7 @@
-import Link from "next/link";
+"use client";
+
 import { User } from "lucide-react";
+import { AppLink } from "@/components/ui/app-link";
 
 export function AppHeader({
   title,
@@ -13,25 +15,25 @@ export function AppHeader({
       <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4">
         <div className="flex items-center gap-3">
           {backHref && (
-            <Link
+            <AppLink
               href={backHref}
               className="text-sm text-primary"
               aria-label="Volver"
             >
               ←
-            </Link>
+            </AppLink>
           )}
           {title && (
             <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
           )}
         </div>
-        <Link
+        <AppLink
           href="/profile"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-muted-foreground hover:text-foreground"
           aria-label="Perfil"
         >
           <User className="h-5 w-5" />
-        </Link>
+        </AppLink>
       </div>
     </header>
   );

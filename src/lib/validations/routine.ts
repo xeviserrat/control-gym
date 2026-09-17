@@ -16,5 +16,11 @@ export const routineExerciseSchema = z.object({
   loadProgression: z.boolean().default(true),
 });
 
+export const swapRoutineExerciseSchema = z.object({
+  routineExerciseId: z.string().uuid(),
+  newExerciseId: z.string().uuid(),
+});
+
 export type RoutineInput = z.infer<typeof routineSchema>;
 export type RoutineExerciseInput = z.infer<typeof routineExerciseSchema>;
+export type SwapRoutineExerciseInput = z.infer<typeof swapRoutineExerciseSchema>;

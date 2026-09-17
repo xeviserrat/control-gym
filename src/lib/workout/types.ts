@@ -18,7 +18,7 @@ export interface WorkoutSessionData {
         restSeconds: number;
         notes: string | null;
         isOptional: boolean;
-      } | null;
+      };
       sets: Array<{
         id: string;
         setNumber: number;

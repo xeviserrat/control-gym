@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppLink } from "@/components/ui/app-link";
 import { AppHeader } from "@/components/layout/app-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getWorkouts } from "@/lib/actions/workouts";
@@ -26,7 +26,7 @@ export default async function HistoryPage() {
 
               return (
                 <li key={workout.id}>
-                  <Link
+                  <AppLink
                     href={`/history/${workout.id}`}
                     className="block rounded-2xl border border-border bg-surface px-4 py-4 hover:bg-surface-elevated"
                   >
@@ -43,7 +43,7 @@ export default async function HistoryPage() {
                         <p className="text-xs">{totalSets} series</p>
                       </div>
                     </div>
-                  </Link>
+                  </AppLink>
                 </li>
               );
             })}

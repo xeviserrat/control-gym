@@ -56,7 +56,8 @@ export async function createExercise(formData: FormData) {
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     muscleGroup: formData.get("muscleGroup") || undefined,
-    defaultRepRange: formData.get("defaultRepRange") || undefined,
+    repsMin: formData.get("repsMin"),
+    repsMax: formData.get("repsMax"),
   });
 
   if (!parsed.success) {
@@ -67,7 +68,7 @@ export async function createExercise(formData: FormData) {
     data: { ...parsed.data, userId: user.id },
   });
 
-  revalidatePath("/routines");
+  revalidateExercisePaths();
   return actionSuccess(exercise);
 }
 
@@ -83,7 +84,8 @@ export async function updateExercise(id: string, formData: FormData) {
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     muscleGroup: formData.get("muscleGroup") || undefined,
-    defaultRepRange: formData.get("defaultRepRange") || undefined,
+    repsMin: formData.get("repsMin"),
+    repsMax: formData.get("repsMax"),
   });
 
   if (!parsed.success) {
@@ -95,7 +97,7 @@ export async function updateExercise(id: string, formData: FormData) {
     data: parsed.data,
   });
 
-  revalidatePath("/routines");
+  revalidateExercisePaths(id);
   return actionSuccess(exercise);
 }
 
@@ -115,6 +117,12 @@ export async function deleteExercise(id: string) {
   }
 
   await prisma.exercise.delete({ where: { id } });
-  revalidatePath("/routines");
+  revalidateExercisePaths(id);
   return actionSuccess(undefined);
+}
+
+function revalidateExercisePaths(id?: string) {
+  revalidatePath("/exercises");
+  revalidatePath("/routines");
+  if (id) revalidatePath(`/exercises/${id}`);
 }

@@ -3,13 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { requireUser, actionError, actionSuccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { completeSetSchema, startWorkoutSchema } from "@/lib/validations/workout";
-import { buildWorkoutSteps, countTotalSteps } from "@/lib/workout/steps";
 import {
-  evaluateProgression,
-  getProgressionMessage,
-  calculateVolume,
-} from "@/lib/workout/progression";
+  completeSetSchema,
+  startWorkoutSchema,
+  swapWorkoutExerciseSchema,
+} from "@/lib/validations/workout";
+import { buildWorkoutSteps, countTotalSteps } from "@/lib/workout/steps";
+import { calculateVolume } from "@/lib/workout/progression";
+import {
+  computeStartTrainingHints,
+  computeWorkoutProgressionResults,
+} from "@/lib/workout/progression-results";
 import { mapWorkoutSession } from "@/lib/workout/map-session";
 import type { WorkoutSessionData } from "@/lib/workout/types";
 
@@ -104,6 +108,13 @@ export async function startWorkout(routineId: string, date: string) {
           exerciseId: ex.exerciseId,
           routineExerciseId: ex.id,
           order: ex.order,
+          targetSets: ex.sets,
+          repsMin: ex.repsMin,
+          repsMax: ex.repsMax,
+          restSeconds: ex.restSeconds,
+          notes: ex.notes,
+          isOptional: ex.isOptional,
+          loadProgression: ex.loadProgression,
         },
       });
     }
@@ -132,13 +143,13 @@ export async function getWorkoutSession(
     exerciseId: we.exerciseId,
     exerciseName: we.exercise.name,
     order: we.order,
-    sets: we.routineExercise?.sets ?? (we.sets.length || 3),
-    repsMin: we.routineExercise?.repsMin ?? 8,
-    repsMax: we.routineExercise?.repsMax ?? 12,
-    restSeconds: we.routineExercise?.restSeconds ?? 90,
-    notes: we.routineExercise?.notes ?? null,
-    isOptional: we.routineExercise?.isOptional ?? false,
-    loadProgression: we.routineExercise?.loadProgression ?? true,
+    sets: we.targetSets,
+    repsMin: we.repsMin,
+    repsMax: we.repsMax,
+    restSeconds: we.restSeconds,
+    notes: we.notes,
+    isOptional: we.isOptional,
+    loadProgression: we.loadProgression,
     supersetGroupId: we.routineExercise?.supersetGroupId ?? null,
     supersetOrder: we.routineExercise?.supersetOrder ?? null,
     skipped: we.skipped,
@@ -199,7 +210,10 @@ async function getPreviousPerformanceForWorkout(
   > = {};
 
   for (const we of previousWorkout.exercises) {
-    map[we.exerciseId] = {
+    if (we.skipped || we.sets.length === 0) continue;
+
+    const key = we.routineExerciseId ?? we.exerciseId;
+    map[key] = {
       date: previousWorkout.date,
       sets: we.sets.map((s) => ({
         weight: Number(s.weight),
@@ -274,7 +288,7 @@ export async function completeSet(input: {
   });
   if (!workoutExercise) return actionError("Ejercicio no encontrado");
 
-  const set = await prisma.workoutSet.upsert({
+  await prisma.workoutSet.upsert({
     where: {
       workoutExerciseId_setNumber: {
         workoutExerciseId: parsed.data.workoutExerciseId,
@@ -298,7 +312,8 @@ export async function completeSet(input: {
     },
   });
 
-  return actionSuccess(set);
+  revalidatePath(`/train/${input.workoutId}`);
+  return actionSuccess(undefined);
 }
 
 export async function deleteSet(workoutId: string, setId: string) {
@@ -333,10 +348,19 @@ export async function addExtraSet(workoutExerciseId: string) {
   const maxSet = we.sets.reduce((max, s) => Math.max(max, s.setNumber), 0);
   const nextSetNumber = maxSet + 1;
 
-  if (we.routineExercise) {
+  const nextSets = Math.max(we.targetSets, nextSetNumber);
+
+  await prisma.workoutExercise.update({
+    where: { id: workoutExerciseId },
+    data: { targetSets: nextSets },
+  });
+
+  if (we.routineExerciseId) {
     await prisma.routineExercise.update({
-      where: { id: we.routineExerciseId! },
-      data: { sets: Math.max(we.routineExercise.sets, nextSetNumber) },
+      where: { id: we.routineExerciseId },
+      data: {
+        sets: Math.max(we.routineExercise?.sets ?? we.targetSets, nextSetNumber),
+      },
     });
   }
 
@@ -359,6 +383,55 @@ export async function skipExercise(workoutExerciseId: string) {
     data: { skipped: true },
   });
 
+  return actionSuccess(undefined);
+}
+
+export async function swapWorkoutExercise(
+  workoutExerciseId: string,
+  newExerciseId: string,
+) {
+  const user = await requireUser();
+
+  const parsed = swapWorkoutExerciseSchema.safeParse({
+    workoutExerciseId,
+    newExerciseId,
+  });
+  if (!parsed.success) {
+    return actionError(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+
+  const we = await prisma.workoutExercise.findFirst({
+    where: {
+      id: parsed.data.workoutExerciseId,
+      workout: { userId: user.id, status: "IN_PROGRESS" },
+    },
+  });
+  if (!we) return actionError("Ejercicio no encontrado");
+
+  if (we.exerciseId === parsed.data.newExerciseId) {
+    return actionError("Ya estás usando este ejercicio");
+  }
+
+  const exercise = await prisma.exercise.findFirst({
+    where: {
+      id: parsed.data.newExerciseId,
+      OR: [{ userId: user.id }, { isGlobal: true }],
+    },
+  });
+  if (!exercise) return actionError("Ejercicio no encontrado");
+
+  await prisma.$transaction(async (tx) => {
+    await tx.workoutSet.deleteMany({
+      where: { workoutExerciseId: parsed.data.workoutExerciseId },
+    });
+
+    await tx.workoutExercise.update({
+      where: { id: parsed.data.workoutExerciseId },
+      data: { exerciseId: parsed.data.newExerciseId },
+    });
+  });
+
+  revalidatePath(`/train/${we.workoutId}`);
   return actionSuccess(undefined);
 }
 
@@ -385,22 +458,7 @@ export async function finishWorkout(workoutId: string) {
     },
   });
 
-  const progressionResults = workout.exercises
-    .filter((we) => !we.skipped && we.sets.length > 0)
-    .map((we) => {
-      const repsMin = we.routineExercise?.repsMin ?? 8;
-      const repsMax = we.routineExercise?.repsMax ?? 12;
-      const loadProgression = we.routineExercise?.loadProgression ?? true;
-
-      if (!loadProgression) return null;
-
-      const result = evaluateProgression(we.sets, repsMin, repsMax);
-      return {
-        exerciseName: we.exercise.name,
-        ...getProgressionMessage(result),
-      };
-    })
-    .filter(Boolean);
+  const progressionResults = computeWorkoutProgressionResults(workout.exercises);
 
   revalidatePath("/history");
   revalidatePath("/dashboard");
@@ -425,6 +483,66 @@ export async function finishWorkout(workoutId: string) {
     totalVolume,
     progressionResults,
   });
+}
+
+export async function getRoutineStartHints(routineId: string) {
+  const user = await requireUser();
+
+  const routine = await prisma.routine.findFirst({
+    where: { id: routineId, userId: user.id },
+    include: {
+      exercises: {
+        orderBy: { order: "asc" },
+        include: { exercise: true },
+      },
+    },
+  });
+  if (!routine) return [];
+
+  const previousWorkout = await prisma.workout.findFirst({
+    where: {
+      userId: user.id,
+      routineId,
+      status: "COMPLETED",
+    },
+    orderBy: { date: "desc" },
+    include: {
+      exercises: {
+        include: {
+          sets: { orderBy: { setNumber: "asc" } },
+        },
+      },
+    },
+  });
+
+  const previousBySlot = new Map<
+    string,
+    { weight: number; reps: number }[]
+  >();
+
+  if (previousWorkout) {
+    for (const we of previousWorkout.exercises) {
+      if (we.skipped || we.sets.length === 0 || !we.routineExerciseId) continue;
+
+      previousBySlot.set(
+        we.routineExerciseId,
+        we.sets.map((s) => ({
+          weight: Number(s.weight),
+          reps: s.reps,
+        })),
+      );
+    }
+  }
+
+  return computeStartTrainingHints(
+    routine.exercises.map((slot) => ({
+      exerciseName: slot.exercise.name,
+      repsMin: slot.repsMin,
+      repsMax: slot.repsMax,
+      loadProgression: slot.loadProgression,
+      previousSets: previousBySlot.get(slot.id),
+    })),
+  );
 }
 
 export async function cancelWorkout(workoutId: string) {

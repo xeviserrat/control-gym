@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePendingAction } from "@/hooks/use-pending-action";
 import {
+  ArrowLeftRight,
   ChevronDown,
   ChevronUp,
   Link2,
@@ -12,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip } from "@/components/ui/tooltip";
 import { formatRepRange } from "@/lib/utils";
 import {
   addExerciseToRoutine,
@@ -19,10 +22,12 @@ import {
   moveRoutineExercise,
   removeExerciseFromRoutine,
   removeFromSuperset,
+  swapRoutineExercise,
   updateRoutine,
   updateRoutineExercise,
 } from "@/lib/actions/routines";
 import { AddExercisePicker } from "@/components/routines/add-exercise-picker";
+import { getSupersetLabel } from "@/lib/routines/superset-label";
 
 type RoutineExercise = {
   id: string;
@@ -52,24 +57,15 @@ interface RoutineEditorProps {
 }
 
 export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
-  const [pending, startTransition] = useTransition();
+  const { pending, run } = usePendingAction("Guardando…");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [combiningId, setCombiningId] = useState<string | null>(null);
+  const [swappingId, setSwappingId] = useState<string | null>(null);
   const router = useRouter();
 
   const existingExerciseIds = new Set(
     routine.exercises.map((e) => e.exercise.id),
   );
-
-  function getSupersetLabel(ex: RoutineExercise): string | null {
-    if (!ex.supersetGroupId) return null;
-    const groupMembers = routine.exercises
-      .filter((e) => e.supersetGroupId === ex.supersetGroupId)
-      .sort((a, b) => (a.supersetOrder ?? 0) - (b.supersetOrder ?? 0));
-    const idx = groupMembers.findIndex((e) => e.id === ex.id);
-    const letter = String.fromCharCode(65 + (idx % 26));
-    return `${letter}${idx + 1}`;
-  }
 
   return (
     <div className="space-y-6">
@@ -77,7 +73,7 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
         onSubmit={(e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
-          startTransition(async () => {
+          run(async () => {
             await updateRoutine(routine.id, formData);
             router.refresh();
           });
@@ -95,16 +91,22 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
           label="Descripción"
           defaultValue={routine.description ?? ""}
         />
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button
+          type="submit"
+          size="sm"
+          loading={pending}
+          loadingText="Guardando…"
+        >
           Guardar
         </Button>
       </form>
 
       <div className="space-y-3">
         {routine.exercises.map((ex, index) => {
-          const label = getSupersetLabel(ex);
+          const label = getSupersetLabel(ex, routine.exercises);
           const isEditing = editingId === ex.id;
           const isCombining = combiningId === ex.id;
+          const isSwapping = swappingId === ex.id;
 
           return (
             <div
@@ -113,36 +115,40 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
             >
               <div className="flex items-start gap-3">
                 <div className="flex flex-col gap-1 pt-1">
-                  <button
-                    type="button"
-                    disabled={index === 0 || pending}
-                    onClick={() =>
-                      startTransition(async () => {
-                        await moveRoutineExercise(ex.id, "up");
-                        router.refresh();
-                      })
-                    }
-                    className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-                    aria-label="Subir"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={
-                      index === routine.exercises.length - 1 || pending
-                    }
-                    onClick={() =>
-                      startTransition(async () => {
-                        await moveRoutineExercise(ex.id, "down");
-                        router.refresh();
-                      })
-                    }
-                    className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-                    aria-label="Bajar"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
+                  <Tooltip content="Subir en el orden de la rutina">
+                    <button
+                      type="button"
+                      disabled={index === 0 || pending}
+                      onClick={() =>
+                        run(async () => {
+                          await moveRoutineExercise(ex.id, "up");
+                          router.refresh();
+                        })
+                      }
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                      aria-label="Subir"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Bajar en el orden de la rutina">
+                    <button
+                      type="button"
+                      disabled={
+                        index === routine.exercises.length - 1 || pending
+                      }
+                      onClick={() =>
+                        run(async () => {
+                          await moveRoutineExercise(ex.id, "down");
+                          router.refresh();
+                        })
+                      }
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                      aria-label="Bajar"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                  </Tooltip>
                 </div>
 
                 <div className="flex-1">
@@ -172,7 +178,7 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
                   onSubmit={(e) => {
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
-                    startTransition(async () => {
+                    run(async () => {
                       await updateRoutineExercise(ex.id, {
                         sets: Number(fd.get("sets")),
                         repsMin: Number(fd.get("repsMin")),
@@ -242,10 +248,38 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
                     />
                     Progresión de carga
                   </label>
-                  <Button type="submit" size="sm" disabled={pending}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    loading={pending}
+                    loadingText="Guardando…"
+                  >
                     Guardar ejercicio
                   </Button>
                 </form>
+              )}
+
+              {isSwapping && (
+                <div className="mt-4 border-t border-border pt-4">
+                  <AddExercisePicker
+                    exercises={allExercises}
+                    onAdd={(exerciseId) =>
+                      run(async () => {
+                        await swapRoutineExercise(ex.id, exerciseId);
+                        setSwappingId(null);
+                        router.refresh();
+                      })
+                    }
+                    pending={pending}
+                    pendingLabel="Cambiando ejercicio…"
+                    label="Cambiar ejercicio"
+                    excludeExerciseId={ex.exercise.id}
+                    defaultOpen
+                    onCancel={() => setSwappingId(null)}
+                    allowCreate
+                    createSubmitLabel="Crear y sustituir"
+                  />
+                </div>
               )}
 
               {isCombining && (
@@ -257,7 +291,10 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
                     .filter(
                       (other) =>
                         other.id !== ex.id &&
-                        other.supersetGroupId !== ex.supersetGroupId,
+                        !(
+                          ex.supersetGroupId != null &&
+                          other.supersetGroupId === ex.supersetGroupId
+                        ),
                     )
                     .map((other) => (
                       <Button
@@ -267,7 +304,7 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
                         fullWidth
                         disabled={pending}
                         onClick={() =>
-                          startTransition(async () => {
+                          run(async () => {
                             await combineExercises(ex.id, other.id);
                             setCombiningId(null);
                             router.refresh();
@@ -287,57 +324,75 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
                 </div>
               )}
 
-              {!isEditing && !isCombining && (
+              {!isEditing && !isCombining && !isSwapping && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingId(ex.id)}
-                    aria-label="Editar"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  {!ex.supersetGroupId ? (
+                  <Tooltip content="Editar series, reps, descanso y notas">
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setCombiningId(ex.id)}
-                      aria-label="Combinar"
+                      onClick={() => setEditingId(ex.id)}
+                      aria-label="Editar"
                     >
-                      <Link2 className="h-4 w-4" />
+                      <Pencil className="h-4 w-4" />
                     </Button>
+                  </Tooltip>
+                  <Tooltip content="Sustituir por otro ejercicio sin perder la configuración">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSwappingId(ex.id)}
+                      aria-label="Cambiar ejercicio"
+                    >
+                      <ArrowLeftRight className="h-4 w-4" />
+                    </Button>
+                  </Tooltip>
+                  {!ex.supersetGroupId ? (
+                    <Tooltip content="Agrupar en superset con otro ejercicio">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setCombiningId(ex.id)}
+                        aria-label="Combinar"
+                      >
+                        <Link2 className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
                   ) : (
+                    <Tooltip content="Quitar del superset y entrenar por separado">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={pending}
+                        onClick={() =>
+                          run(async () => {
+                            await removeFromSuperset(ex.id);
+                            router.refresh();
+                          })
+                        }
+                        aria-label="Separar superset"
+                      >
+                        <Unlink className="h-4 w-4" />
+                      </Button>
+                    </Tooltip>
+                  )}
+                  <Tooltip content="Quitar este ejercicio de la rutina">
                     <Button
                       size="sm"
                       variant="ghost"
                       disabled={pending}
-                      onClick={() =>
-                        startTransition(async () => {
-                          await removeFromSuperset(ex.id);
-                          router.refresh();
-                        })
-                      }
-                      aria-label="Separar superset"
+                      onClick={() => {
+                        if (confirm("¿Eliminar ejercicio de la rutina?")) {
+                          run(async () => {
+                            await removeExerciseFromRoutine(ex.id);
+                            router.refresh();
+                          });
+                        }
+                      }}
+                      aria-label="Eliminar"
                     >
-                      <Unlink className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={pending}
-                    onClick={() => {
-                      if (confirm("¿Eliminar ejercicio de la rutina?")) {
-                        startTransition(async () => {
-                          await removeExerciseFromRoutine(ex.id);
-                          router.refresh();
-                        });
-                      }
-                    }}
-                    aria-label="Eliminar"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  </Tooltip>
                 </div>
               )}
             </div>
@@ -348,12 +403,13 @@ export function RoutineEditor({ routine, allExercises }: RoutineEditorProps) {
       <AddExercisePicker
         exercises={allExercises.filter((e) => !existingExerciseIds.has(e.id))}
         onAdd={(exerciseId) =>
-          startTransition(async () => {
+          run(async () => {
             await addExerciseToRoutine(routine.id, { exerciseId });
             router.refresh();
           })
         }
         pending={pending}
+        allowCreate
       />
     </div>
   );
