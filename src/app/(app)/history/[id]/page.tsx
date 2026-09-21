@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
-import { ProgressionResultsList } from "@/components/workout/progression-results-list";
+import { ExerciseSessionSets } from "@/components/workout/exercise-session-sets";
 import { getWorkoutById } from "@/lib/actions/workouts";
-import { computeWorkoutProgressionResults } from "@/lib/workout/progression-results";
-import { formatDate, formatDuration, formatWeight } from "@/lib/utils";
+import { formatDate, formatDuration } from "@/lib/utils";
 
 export default async function WorkoutDetailPage({
   params,
@@ -16,8 +15,6 @@ export default async function WorkoutDetailPage({
     (acc, we) => acc + we.sets.length,
     0,
   );
-
-  const progressionResults = computeWorkoutProgressionResults(workout.exercises);
 
   return (
     <>
@@ -33,26 +30,23 @@ export default async function WorkoutDetailPage({
           </p>
         </div>
 
-        <ProgressionResultsList
-          results={progressionResults}
-          heading="Cómo terminó esta sesión"
-        />
-
         <div className="space-y-6">
           {workout.exercises
             .filter((we) => !we.skipped && we.sets.length > 0)
             .map((we) => (
-              <section key={we.id}>
-                <h2 className="font-semibold">{we.exercise.name}</h2>
-                <div className="mt-2 space-y-1">
-                  {we.sets.map((s) => (
-                    <p key={s.id} className="text-sm text-muted-foreground">
-                      {formatWeight(Number(s.weight))} kg × {s.reps}
-                      {s.rir != null && ` · RIR ${s.rir}`}
-                    </p>
-                  ))}
-                </div>
-              </section>
+              <ExerciseSessionSets
+                key={we.id}
+                exerciseName={we.exercise.name}
+                sets={we.sets.map((s) => ({
+                  id: s.id,
+                  weight: Number(s.weight),
+                  reps: s.reps,
+                  rir: s.rir,
+                }))}
+                repsMin={we.repsMin}
+                repsMax={we.repsMax}
+                loadProgression={we.loadProgression}
+              />
             ))}
         </div>
       </main>

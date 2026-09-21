@@ -7,6 +7,7 @@ import { usePendingAction } from "@/hooks/use-pending-action";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { NextExercisePreview } from "@/components/workout/next-exercise-preview";
 import { RestTimer } from "@/components/workout/rest-timer";
 import {
   SetInputPanel,
@@ -150,6 +151,8 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
   );
 
   const currentStep = steps[stepIndex];
+  const nextStep =
+    stepIndex < steps.length - 1 ? steps[stepIndex + 1] : null;
   const isLastStep = stepIndex >= steps.length - 1;
 
   const completedCount = session.workout.exercises.reduce(
@@ -335,11 +338,25 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
       </div>
 
       {phase === "rest" ? (
-        <RestTimer
-          seconds={currentStep.restSeconds}
-          onComplete={handleRestComplete}
-          onSkip={handleRestComplete}
-        />
+        <div className="flex flex-1 flex-col px-4 pb-8">
+          <RestTimer
+            seconds={currentStep.restSeconds}
+            onComplete={handleRestComplete}
+            onSkip={handleRestComplete}
+          />
+          {nextStep && (
+            <NextExercisePreview
+              nextStep={nextStep}
+              currentStep={currentStep}
+              previousSet={
+                (
+                  session.previousPerformance[nextStep.routineExerciseId] ??
+                  session.previousPerformance[nextStep.exerciseId]
+                )?.sets[nextStep.setNumber - 1]
+              }
+            />
+          )}
+        </div>
       ) : (
         <>
           <div className="flex-1 px-4 py-6">

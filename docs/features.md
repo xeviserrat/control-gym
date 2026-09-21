@@ -18,7 +18,7 @@
 2. `startWorkout` creates Workout + WorkoutExercises, copying sets/reps/rest from each **routine slot** (not the exercise library defaults)
 3. `/train/[id]` renders serie-by-serie UI
 4. Each set saved immediately on "Completar serie"
-5. Rest timer after each completed set (when rest > 0)
+5. Rest timer after each completed set (when rest > 0), with a preview of the next set/exercise (name, set number, rep target, and last-time weight if available)
 6. `finishWorkout` marks complete, shows summary + progression hints
 
 ### Mid-session exercise swap
@@ -53,13 +53,21 @@ Routine editor supports "Combinar con..." to group exercises. Paired exercises a
 
 ## Progression
 
-Double progression: when all sets reach `repsMax` at the same weight, suggest a weight increase (+2.5 kg by default).
+Double progression with rep-based hints (no suggested kg values):
 
-- **Before workout** (`/train`): selecting a routine loads hints from the last completed session of that routine (per exercise slot), suggesting weight increase or rep targets.
-- **During workout** (`SetInputPanel`): compares the current slot with the last completed session of the same routine (matched by `routineExerciseId`). Hints include the exercise name. If the previous session hit `repsMax` on every set at a consistent weight, shows “Listo para subir peso” on set 1 (with suggested weight).
-- **After workout** (`WorkoutSummary`): per-exercise advice for the next session, including exercise name and suggested weight when applicable.
-- **History** (`/history/[id]`): shows the same per-exercise session outcome advice under “Cómo terminó esta sesión”.
+| Outcome | When | Hint |
+|---------|------|------|
+| **Listo para subir peso** | All sets at `repsMax` (same weight), without exceeding the range on every set | Sube un poco el peso; apunta de nuevo al rango |
+| **Peso demasiado bajo** | All sets strictly above `repsMax` | Sube el peso; vuelve al rango objetivo |
+| **Mantén el peso** | Not all sets at `repsMax` | Detalle por serie débil + rango objetivo |
+| **Peso por debajo del de trabajo** (live) | Current set uses less weight than last time and reps exceed `repsMax` | Vuelve al peso habitual |
+
+- **Before workout** (`/train`): hints from the last completed session of that routine (per exercise slot).
+- **During workout** (`SetInputPanel`): per-set hint in “Última vez”; live banner when repeating a qualifying performance (set 2+) or when weight is too low with high reps.
+- **After workout** (`WorkoutSummary`): per-exercise advice list for the next session.
+- **History** (`/history/[id]`): each set row includes its own hint via `ExerciseSessionSets` (no separate hint block).
 - Per-exercise toggle: **Progresión de carga** in the routine editor (`loadProgression`).
+- Core logic: `src/lib/workout/progression.ts` (`getSessionProgressionFeedback`).
 
 ## PWA & workout protection
 

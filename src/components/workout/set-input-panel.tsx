@@ -8,6 +8,7 @@ import { RirSelector } from "@/components/workout/rir-selector";
 import { formatRepRange } from "@/lib/utils";
 import {
   getInSessionProgressionHint,
+  getUnderWorkingWeightHint,
   isRepeatingQualifyingPerformance,
 } from "@/lib/workout/progression";
 import { getExerciseTrainingHint } from "@/lib/workout/progression-results";
@@ -98,6 +99,7 @@ export function SetInputPanel({
         step.repsMin,
         step.repsMax,
         step.loadProgression,
+        step.setNumber,
       ),
     [
       step.exerciseName,
@@ -105,23 +107,55 @@ export function SetInputPanel({
       step.repsMin,
       step.repsMax,
       step.loadProgression,
+      step.setNumber,
     ],
   );
 
   const weightNum = parseFloat(values.weight);
   const repsNum = parseInt(values.reps, 10);
-  const showLiveProgressionHint =
-    progressionHint &&
-    previousSets &&
-    !isNaN(weightNum) &&
-    !isNaN(repsNum) &&
-    isRepeatingQualifyingPerformance(
+  const hasValidInput = !isNaN(weightNum) && !isNaN(repsNum);
+
+  const liveHint = useMemo(() => {
+    if (!previousSets?.length || !hasValidInput) return null;
+
+    const underWorkingWeight = getUnderWorkingWeightHint(
       weightNum,
       repsNum,
       previousSets,
+      step.setNumber,
       step.repsMin,
       step.repsMax,
     );
+    if (underWorkingWeight) return underWorkingWeight;
+
+    if (
+      progressionHint &&
+      isRepeatingQualifyingPerformance(
+        weightNum,
+        repsNum,
+        previousSets,
+        step.repsMin,
+        step.repsMax,
+      )
+    ) {
+      return progressionHint;
+    }
+
+    return null;
+  }, [
+    previousSets,
+    hasValidInput,
+    weightNum,
+    repsNum,
+    step.setNumber,
+    step.repsMin,
+    step.repsMax,
+    progressionHint,
+  ]);
+
+  const showLiveHint =
+    liveHint &&
+    (liveHint.kind === "under_working_weight" || step.setNumber > 1);
 
   return (
     <div key={stepKey} className="space-y-6">
@@ -167,10 +201,9 @@ export function SetInputPanel({
         onChange={(rir) => update({ rir })}
       />
 
-      {showLiveProgressionHint && step.setNumber > 1 && (
+      {showLiveHint && (
         <ProgressionHint
-          hint={progressionHint}
-          repsMax={step.repsMax}
+          hint={liveHint}
           exerciseName={step.exerciseName}
           compact
         />

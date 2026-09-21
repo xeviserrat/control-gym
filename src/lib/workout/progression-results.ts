@@ -1,10 +1,5 @@
-import { formatWeight } from "@/lib/utils";
 import {
-  evaluateProgression,
-  getInSessionProgressionHint,
-  getProgressionMessage,
-  hasConsistentWeight,
-  suggestNextWeight,
+  getSessionProgressionFeedback,
   type WeightedSetResult,
 } from "@/lib/workout/progression";
 
@@ -47,23 +42,17 @@ export function computeWorkoutProgressionResults(
     .filter((we) => !we.skipped && we.sets.length > 0 && we.loadProgression)
     .map((we) => {
       const weightedSets = toWeightedSets(we.sets);
-      const result = evaluateProgression(weightedSets, we.repsMin, we.repsMax);
-      const message = getProgressionMessage(result);
-
-      let detail = message.message;
-      if (
-        result === "increase" &&
-        hasConsistentWeight(weightedSets) &&
-        weightedSets[0]
-      ) {
-        detail = `${detail} Prueba ~${formatWeight(suggestNextWeight(weightedSets[0].weight))} kg.`;
-      }
+      const feedback = getSessionProgressionFeedback(
+        weightedSets,
+        we.repsMin,
+        we.repsMax,
+      );
 
       return {
         exerciseName: we.exercise.name,
-        title: message.title,
-        message: detail,
-        variant: message.variant,
+        title: feedback.title,
+        message: feedback.message,
+        variant: feedback.variant,
       };
     });
 }
@@ -74,33 +63,20 @@ function buildExerciseTrainingHint(
   repsMax: number,
   loadProgression: boolean,
   previousSets?: WeightedSetResult[],
+  setNumber?: number,
 ): StartTrainingHint | null {
   if (!loadProgression || !previousSets?.length) return null;
 
-  const increaseHint = getInSessionProgressionHint(
-    previousSets,
-    repsMin,
-    repsMax,
-    true,
-  );
-
-  if (increaseHint) {
-    return {
-      exerciseName,
-      variant: "success",
-      title: increaseHint.title,
-      message: `Prueba ~${formatWeight(increaseHint.suggestedWeight)} kg — la última vez hiciste ${formatWeight(increaseHint.previousWeight)} kg × ${repsMax}+ reps en todas las series.`,
-    };
-  }
-
-  const lastWeight = previousSets[0]?.weight;
-  if (lastWeight == null) return null;
+  const feedback = getSessionProgressionFeedback(previousSets, repsMin, repsMax, {
+    setNumber,
+    context: "training",
+  });
 
   return {
     exerciseName,
-    variant: "warning",
-    title: "Mantén el peso",
-    message: `Intenta acercarte a ${repsMax} reps en todas las series con ~${formatWeight(lastWeight)} kg.`,
+    title: feedback.title,
+    message: feedback.message,
+    variant: feedback.variant,
   };
 }
 
@@ -110,6 +86,7 @@ export function getExerciseTrainingHint(
   repsMin: number,
   repsMax: number,
   loadProgression: boolean,
+  setNumber?: number,
 ): StartTrainingHint | null {
   return buildExerciseTrainingHint(
     exerciseName,
@@ -117,6 +94,7 @@ export function getExerciseTrainingHint(
     repsMax,
     loadProgression,
     previousSets,
+    setNumber,
   );
 }
 
