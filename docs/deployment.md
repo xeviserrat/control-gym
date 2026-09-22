@@ -30,7 +30,8 @@ DATABASE_URL="..." DIRECT_URL="..." npx prisma migrate deploy
 
 - Use **Transaction pooler** URL for `DATABASE_URL` (port 6543, `?pgbouncer=true`)
 - Use **Direct** URL for `DIRECT_URL` (migrations)
-- Run `supabase/rls.sql` in SQL Editor (optional)
+- Run **`supabase/rls.sql`** in SQL Editor after migrations (required for Supabase security linter / PostgREST)
+- Authentication → **Password security** → enable **Leaked password protection** (HaveIBeenPwned check)
 - Vercel → Environment Variables → scope **Production**:
   - `NEXT_PUBLIC_SITE_URL` = `https://control-gym-bay.vercel.app`
   - (keep `http://localhost:3000` only in `.env.local`, not in Vercel Production)

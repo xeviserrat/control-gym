@@ -50,7 +50,7 @@ Auth session is managed by Supabase cookies. Every Server Action calls `requireU
 
 - All mutations verify `userId` from Supabase session
 - IDs from client are never trusted without ownership check
-- Optional RLS policies in `supabase/rls.sql` for defense in depth
+- RLS in `supabase/rls.sql` (run in Supabase SQL Editor): blocks anon API access; app data uses Prisma with server-side ownership checks
 
 ## Workout persistence
 

@@ -55,3 +55,7 @@ Enable Email provider in Supabase Dashboard → Authentication → Providers.
 | Redirect URLs | `http://localhost:3000/auth/callback` | `https://control-gym-bay.vercel.app/auth/callback` |
 
 Add **both** redirect URLs so password reset works locally and in production.
+
+After `npx prisma migrate dev` (or `migrate deploy` in production), paste and run the full contents of **`supabase/rls.sql`** in the SQL Editor. Re-run the script safely after policy changes (it uses `DROP POLICY IF EXISTS`).
+
+In **Authentication → Password security**, enable **Leaked password protection**.

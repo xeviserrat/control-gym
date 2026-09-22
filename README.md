@@ -63,7 +63,7 @@ Abre [http://localhost:3000](http://localhost:3000).
 npx prisma migrate deploy
 ```
 
-5. (Opcional) Ejecuta `supabase/rls.sql` en el SQL Editor de Supabase
+5. Ejecuta `supabase/rls.sql` en el SQL Editor de Supabase (RLS + políticas)
 
 ## Scripts
 
