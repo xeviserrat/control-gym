@@ -2,6 +2,13 @@
 
 ## Vercel
 
+### Branch mapping
+
+| Git branch | Uso |
+|------------|-----|
+| `preview` | Staging integrado; destino de PRs de features (ver [git-workflow.md](./git-workflow.md)) |
+| `main` | Producción; solo entradas vía PR desde `preview` |
+
 1. Import Git repository
 2. Framework preset: **Next.js** (not Other)
 3. Root Directory: empty
