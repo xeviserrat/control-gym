@@ -41,7 +41,9 @@ Skipped automatically when `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD` are missing (l
 
 ## GitHub secrets
 
-Configure in **Settings → Secrets and variables → Actions** (repository `xeviserrat/control-gym`):
+Configure in **Settings → Secrets and variables → Actions** (repository `xeviserrat/control-gym`).
+
+Use the **Secrets** tab for all values (recommended). The workflow also reads **Repository variables** with the same names if a secret is empty (handy for `NEXT_PUBLIC_*`; keep `DATABASE_URL` / `DIRECT_URL` as secrets).
 
 | Secret | Required | Where to copy it |
 |--------|----------|------------------|

@@ -11,6 +11,12 @@ concurrency:
 
 env:
   NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' && secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL != '' && secrets.DATABASE_URL || vars.DATABASE_URL }}
+  DIRECT_URL: ${{ secrets.DIRECT_URL != '' && secrets.DIRECT_URL || vars.DIRECT_URL }}
+  E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL != '' && secrets.E2E_TEST_EMAIL || vars.E2E_TEST_EMAIL }}
+  E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD != '' && secrets.E2E_TEST_PASSWORD || vars.E2E_TEST_PASSWORD }}
 
 jobs:
   quality:
@@ -32,33 +38,22 @@ jobs:
 
       - run: npm test
 
-      - name: Verify Supabase secrets
+      - name: Verify Supabase configuration
         run: |
           missing=0
           for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY DATABASE_URL DIRECT_URL; do
-            case "$name" in
-              NEXT_PUBLIC_SUPABASE_URL) val="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ;;
-              NEXT_PUBLIC_SUPABASE_ANON_KEY) val="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" ;;
-              DATABASE_URL) val="${{ secrets.DATABASE_URL }}" ;;
-              DIRECT_URL) val="${{ secrets.DIRECT_URL }}" ;;
-            esac
+            eval "val=\$$name"
             if [ -z "$val" ]; then
-              echo "::error::Missing GitHub Actions secret: $name"
+              echo "::error::Missing GitHub Actions configuration: $name"
               missing=1
             fi
           done
           if [ "$missing" -eq 1 ]; then
-            echo "::error::Add secrets under Settings → Secrets and variables → Actions (same values as .env.local). See docs/e2e-ci.md"
+            echo "::error::Add each name under Settings → Secrets and variables → Actions (Secrets tab, or Variables for NEXT_PUBLIC_*). See docs/e2e-ci.md"
             exit 1
           fi
 
-      - name: Build
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      - run: npm run build
 
   e2e:
     name: E2E (Playwright)
@@ -79,25 +74,12 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Build app
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      - run: npm run build
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
           CI: "true"
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
-          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
-          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
 
       - name: Upload Playwright report
         if: failure()
