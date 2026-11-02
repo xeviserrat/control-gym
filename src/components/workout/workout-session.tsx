@@ -7,6 +7,7 @@ import { usePendingAction } from "@/hooks/use-pending-action";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { LastTimeCollapsible } from "@/components/workout/last-time-collapsible";
 import { NextExercisePreview } from "@/components/workout/next-exercise-preview";
 import { RestTimer } from "@/components/workout/rest-timer";
 import {
@@ -25,7 +26,10 @@ import {
 } from "@/lib/actions/workouts";
 import type { WorkoutSessionData } from "@/lib/workout/types";
 import type { WorkoutStep } from "@/lib/workout/steps";
-import type { ProgressionResultItem } from "@/lib/workout/progression-results";
+import {
+  getExerciseTrainingHint,
+  type ProgressionResultItem,
+} from "@/lib/workout/progression-results";
 
 const STORAGE_KEY = "workout-session-state";
 
@@ -287,12 +291,15 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
     );
   }
 
-  const prev =
-    session.previousPerformance[currentStep.routineExerciseId] ??
-    session.previousPerformance[currentStep.exerciseId];
+  const prev = session.previousPerformance[currentStep.exerciseId];
   const existingSet = session.workout.exercises
     .find((we) => we.id === currentStep.workoutExerciseId)
     ?.sets.find((s) => s.setNumber === currentStep.setNumber);
+
+  const restHighlightSetNumber =
+    nextStep?.workoutExerciseId === currentStep.workoutExerciseId
+      ? nextStep.setNumber
+      : currentStep.setNumber;
 
   const stepKey = `${currentStep.workoutExerciseId}-${currentStep.setNumber}-${existingSet?.id ?? "new"}`;
 
@@ -344,17 +351,42 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
             onComplete={handleRestComplete}
             onSkip={handleRestComplete}
           />
+          <div className="mt-6 space-y-4">
+            <div className="text-center">
+              <p className="text-lg font-semibold tracking-tight">
+                {currentStep.exerciseName}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Serie {currentStep.setNumber} / {currentStep.totalSets}
+              </p>
+            </div>
+            {prev?.sets && prev.sets.length > 0 && (
+              <LastTimeCollapsible
+                setNumber={restHighlightSetNumber}
+                previousSets={prev.sets}
+                trainingHint={getExerciseTrainingHint(
+                  currentStep.exerciseName,
+                  prev.sets,
+                  currentStep.repsMin,
+                  currentStep.repsMax,
+                  currentStep.loadProgression,
+                  restHighlightSetNumber,
+                )}
+              />
+            )}
+          </div>
           {nextStep && (
-            <NextExercisePreview
-              nextStep={nextStep}
-              currentStep={currentStep}
-              previousSet={
-                (
-                  session.previousPerformance[nextStep.routineExerciseId] ??
-                  session.previousPerformance[nextStep.exerciseId]
-                )?.sets[nextStep.setNumber - 1]
-              }
-            />
+            <div className="mt-4">
+              <NextExercisePreview
+                nextStep={nextStep}
+                currentStep={currentStep}
+                previousSet={
+                  session.previousPerformance[nextStep.exerciseId]?.sets[
+                    nextStep.setNumber - 1
+                  ]
+                }
+              />
+            </div>
           )}
         </div>
       ) : (
