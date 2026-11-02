@@ -12,7 +12,7 @@
 ```bash
 npm install
 cp .env.example .env.local
-npx playwright install chromium   # también se ejecuta en postinstall; repite si falla test:e2e
+npx playwright install chromium   # una vez por máquina; ver npm run test:e2e:install
 ```
 
 ## Environment variables
