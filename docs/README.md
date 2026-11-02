@@ -7,3 +7,4 @@
 | [features.md](./features.md) | Product areas and routes |
 | [deployment.md](./deployment.md) | Vercel + Supabase deploy |
 | [conventions.md](./conventions.md) | Code style and patterns |
+| [e2e-ci.md](./e2e-ci.md) | E2E tests and GitHub Actions CI |

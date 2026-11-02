@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' && secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL != '' && secrets.DATABASE_URL || vars.DATABASE_URL }}
+  DIRECT_URL: ${{ secrets.DIRECT_URL != '' && secrets.DIRECT_URL || vars.DIRECT_URL }}
+  E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL != '' && secrets.E2E_TEST_EMAIL || vars.E2E_TEST_EMAIL }}
+  E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD != '' && secrets.E2E_TEST_PASSWORD || vars.E2E_TEST_PASSWORD }}
+
+jobs:
+  quality:
+    name: Lint, unit tests, build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - name: Verify Supabase configuration
+        run: |
+          missing=0
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY DATABASE_URL DIRECT_URL; do
+            eval "val=\$$name"
+            if [ -z "$val" ]; then
+              echo "::error::Missing GitHub Actions configuration: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::Add each name under Settings → Secrets and variables → Actions (Secrets tab, or Variables for NEXT_PUBLIC_*). See docs/e2e-ci.md"
+            exit 1
+          fi
+
+      - run: npm run build
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-24.04
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run build
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          CI: "true"
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

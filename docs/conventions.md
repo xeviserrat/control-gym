@@ -34,7 +34,8 @@
 
 ## Testing
 
-- Vitest for unit tests
+- Vitest for unit tests (`src/**/*.test.ts`)
+- Playwright for E2E (`e2e/*.spec.ts`) — see [e2e-ci.md](./e2e-ci.md)
 - Critical logic: `src/lib/workout/__tests__/`
 
 ## Naming
