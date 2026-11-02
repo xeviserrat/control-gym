@@ -41,18 +41,20 @@ Skipped automatically when `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD` are missing (l
 
 ## GitHub secrets
 
-Configure in **Settings → Secrets and variables → Actions**:
+Configure in **Settings → Secrets and variables → Actions** (repository `xeviserrat/control-gym`):
 
-| Secret | Required for |
-|--------|----------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Build + E2E |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Build + E2E |
-| `DATABASE_URL` | Build + E2E (Prisma) |
-| `DIRECT_URL` | Build + E2E (Prisma) |
-| `E2E_TEST_EMAIL` | Auth E2E only |
-| `E2E_TEST_PASSWORD` | Auth E2E only |
+| Secret | Required | Where to copy it |
+|--------|----------|------------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** (build + E2E smoke) | Supabase → Settings → API → Project URL (`https://xxx.supabase.co`, **without** `/rest/v1/`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | Supabase → Settings → API → anon / publishable key |
+| `DATABASE_URL` | **Yes** | Supabase → Database → Transaction pooler (port **6543**, `?pgbouncer=true`) |
+| `DIRECT_URL` | **Yes** | Supabase → Database → Direct connection (port **5432**) |
+| `E2E_TEST_EMAIL` | No | Dedicated test user email |
+| `E2E_TEST_PASSWORD` | No | Password for that user |
 
-Use a **dedicated Supabase user** for E2E (not your personal account). Seed data via normal onboarding or `prisma db seed` on a CI/staging project.
+**Minimum for green CI:** the first four secrets. Smoke E2E runs without login credentials; the auth spec is skipped if `E2E_TEST_*` are empty.
+
+Values should match your local `.env` / Vercel production (same Supabase project is fine).
 
 Fork PRs from external contributors will not receive secrets; smoke tests still need repo secrets on the default workflow for `build` to succeed if the project requires real env vars.
 

@@ -32,6 +32,26 @@ jobs:
 
       - run: npm test
 
+      - name: Verify Supabase secrets
+        run: |
+          missing=0
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY DATABASE_URL DIRECT_URL; do
+            case "$name" in
+              NEXT_PUBLIC_SUPABASE_URL) val="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" ;;
+              NEXT_PUBLIC_SUPABASE_ANON_KEY) val="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" ;;
+              DATABASE_URL) val="${{ secrets.DATABASE_URL }}" ;;
+              DIRECT_URL) val="${{ secrets.DIRECT_URL }}" ;;
+            esac
+            if [ -z "$val" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::Add secrets under Settings → Secrets and variables → Actions (same values as .env.local). See docs/e2e-ci.md"
+            exit 1
+          fi
+
       - name: Build
         run: npm run build
         env:
