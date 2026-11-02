@@ -8,3 +8,4 @@
 | [deployment.md](./deployment.md) | Vercel + Supabase deploy |
 | [conventions.md](./conventions.md) | Code style and patterns |
 | [git-workflow.md](./git-workflow.md) | Branches: PR → preview → main |
+| [e2e-ci.md](./e2e-ci.md) | E2E tests and GitHub Actions CI |

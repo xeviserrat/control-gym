@@ -164,10 +164,13 @@ export async function getWorkoutSession(
     0,
   );
 
-  const previousPerformance = await getPreviousPerformanceForWorkout(
+  const previousPerformance = await getPreviousPerformanceByExercise(
     user.id,
-    workout.routineId,
-    workout.id,
+    workout.exercises.map((we) => we.exerciseId),
+    {
+      preferRoutineId: workout.routineId,
+      excludeWorkoutId: workout.id,
+    },
   );
 
   return mapWorkoutSession(
@@ -179,59 +182,35 @@ export async function getWorkoutSession(
   );
 }
 
-async function getPreviousPerformanceForWorkout(
-  userId: string,
-  routineId: string,
-  currentWorkoutId: string,
-) {
-  const previousWorkout = await prisma.workout.findFirst({
-    where: {
-      userId,
-      routineId,
-      status: "COMPLETED",
-      id: { not: currentWorkoutId },
-    },
-    orderBy: { date: "desc" },
-    include: {
-      exercises: {
-        include: {
-          exercise: true,
-          sets: { orderBy: { setNumber: "asc" } },
-        },
-      },
-    },
-  });
+type PreviousPerformanceMap = Record<
+  string,
+  { sets: { weight: number; reps: number }[]; date: Date }
+>;
 
-  if (!previousWorkout) return {};
-
-  const map: Record<
-    string,
-    { sets: { weight: number; reps: number }[]; date: Date }
-  > = {};
-
-  for (const we of previousWorkout.exercises) {
-    if (we.skipped || we.sets.length === 0) continue;
-
-    const key = we.routineExerciseId ?? we.exerciseId;
-    map[key] = {
-      date: previousWorkout.date,
-      sets: we.sets.map((s) => ({
-        weight: Number(s.weight),
-        reps: s.reps,
-      })),
-    };
-  }
-
-  return map;
+function toPreviousSets(
+  sets: { weight: unknown; reps: number }[],
+): { weight: number; reps: number }[] {
+  return sets.map((s) => ({
+    weight: Number(s.weight),
+    reps: s.reps,
+  }));
 }
 
-export async function getPreviousExercisePerformance(exerciseId: string) {
-  const user = await requireUser();
-
+async function getLastExercisePerformance(
+  userId: string,
+  exerciseId: string,
+  excludeWorkoutId?: string,
+) {
   const lastWorkoutExercise = await prisma.workoutExercise.findFirst({
     where: {
       exerciseId,
-      workout: { userId: user.id, status: "COMPLETED" },
+      skipped: false,
+      sets: { some: {} },
+      workout: {
+        userId,
+        status: "COMPLETED",
+        ...(excludeWorkoutId ? { id: { not: excludeWorkoutId } } : {}),
+      },
     },
     orderBy: { workout: { date: "desc" } },
     include: {
@@ -244,11 +223,72 @@ export async function getPreviousExercisePerformance(exerciseId: string) {
 
   return {
     date: lastWorkoutExercise.workout.date,
-    sets: lastWorkoutExercise.sets.map((s) => ({
-      weight: Number(s.weight),
-      reps: s.reps,
-    })),
+    sets: toPreviousSets(lastWorkoutExercise.sets),
   };
+}
+
+async function getPreviousPerformanceByExercise(
+  userId: string,
+  exerciseIds: string[],
+  options: {
+    preferRoutineId?: string;
+    excludeWorkoutId?: string;
+  } = {},
+): Promise<PreviousPerformanceMap> {
+  const uniqueIds = [...new Set(exerciseIds)];
+  const map: PreviousPerformanceMap = {};
+
+  if (options.preferRoutineId) {
+    const previousWorkout = await prisma.workout.findFirst({
+      where: {
+        userId,
+        routineId: options.preferRoutineId,
+        status: "COMPLETED",
+        ...(options.excludeWorkoutId
+          ? { id: { not: options.excludeWorkoutId } }
+          : {}),
+      },
+      orderBy: { date: "desc" },
+      include: {
+        exercises: {
+          include: {
+            sets: { orderBy: { setNumber: "asc" } },
+          },
+        },
+      },
+    });
+
+    if (previousWorkout) {
+      for (const we of previousWorkout.exercises) {
+        if (we.skipped || we.sets.length === 0) continue;
+        map[we.exerciseId] = {
+          date: previousWorkout.date,
+          sets: toPreviousSets(we.sets),
+        };
+      }
+    }
+  }
+
+  const missingIds = uniqueIds.filter((id) => !map[id]);
+  if (missingIds.length === 0) return map;
+
+  const fallbacks = await Promise.all(
+    missingIds.map((exerciseId) =>
+      getLastExercisePerformance(userId, exerciseId, options.excludeWorkoutId),
+    ),
+  );
+
+  missingIds.forEach((exerciseId, index) => {
+    const performance = fallbacks[index];
+    if (performance) map[exerciseId] = performance;
+  });
+
+  return map;
+}
+
+export async function getPreviousExercisePerformance(exerciseId: string) {
+  const user = await requireUser();
+  return getLastExercisePerformance(user.id, exerciseId);
 }
 
 export async function completeSet(input: {
@@ -499,40 +539,11 @@ export async function getRoutineStartHints(routineId: string) {
   });
   if (!routine) return [];
 
-  const previousWorkout = await prisma.workout.findFirst({
-    where: {
-      userId: user.id,
-      routineId,
-      status: "COMPLETED",
-    },
-    orderBy: { date: "desc" },
-    include: {
-      exercises: {
-        include: {
-          sets: { orderBy: { setNumber: "asc" } },
-        },
-      },
-    },
-  });
-
-  const previousBySlot = new Map<
-    string,
-    { weight: number; reps: number }[]
-  >();
-
-  if (previousWorkout) {
-    for (const we of previousWorkout.exercises) {
-      if (we.skipped || we.sets.length === 0 || !we.routineExerciseId) continue;
-
-      previousBySlot.set(
-        we.routineExerciseId,
-        we.sets.map((s) => ({
-          weight: Number(s.weight),
-          reps: s.reps,
-        })),
-      );
-    }
-  }
+  const previousByExercise = await getPreviousPerformanceByExercise(
+    user.id,
+    routine.exercises.map((slot) => slot.exerciseId),
+    { preferRoutineId: routineId },
+  );
 
   return computeStartTrainingHints(
     routine.exercises.map((slot) => ({
@@ -540,7 +551,7 @@ export async function getRoutineStartHints(routineId: string) {
       repsMin: slot.repsMin,
       repsMax: slot.repsMax,
       loadProgression: slot.loadProgression,
-      previousSets: previousBySlot.get(slot.id),
+      previousSets: previousByExercise[slot.exerciseId]?.sets,
     })),
   );
 }
