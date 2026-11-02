@@ -7,3 +7,4 @@
 | [features.md](./features.md) | Product areas and routes |
 | [deployment.md](./deployment.md) | Vercel + Supabase deploy |
 | [conventions.md](./conventions.md) | Code style and patterns |
+| [git-workflow.md](./git-workflow.md) | Branches: PR → preview → main |
