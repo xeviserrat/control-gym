@@ -12,6 +12,7 @@
 ```bash
 npm install
 cp .env.example .env.local
+npx playwright install chromium   # también se ejecuta en postinstall; repite si falla test:e2e
 ```
 
 ## Environment variables
@@ -40,6 +41,7 @@ Global exercises are seeded. Example routine "Torso A" is created automatically 
 ```bash
 npm run dev    # http://localhost:3000
 npm run test   # Vitest unit tests
+npm run test:e2e   # Playwright (starts dev server if needed)
 npm run lint   # ESLint
 ```
 
