@@ -6,12 +6,14 @@ type LastTimeCollapsibleProps = {
   readonly setNumber: number;
   readonly previousSets: { weight: number; reps: number }[];
   readonly trainingHint: StartTrainingHint | null;
+  readonly embedded?: boolean;
 };
 
 export function LastTimeCollapsible({
   setNumber,
   previousSets,
   trainingHint,
+  embedded = false,
 }: LastTimeCollapsibleProps) {
   const currentSet = previousSets[setNumber - 1];
   const preview = currentSet
@@ -19,8 +21,18 @@ export function LastTimeCollapsible({
     : `${previousSets.length} series`;
 
   return (
-    <details className="group rounded-2xl border border-border bg-surface">
-      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+    <details
+      className={
+        embedded
+          ? "group border-t border-border"
+          : "group rounded-2xl border border-border bg-surface"
+      }
+    >
+      <summary
+        className={`flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden ${
+          embedded ? "px-0 py-3" : "px-4 py-3"
+        }`}
+      >
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Última vez
@@ -33,7 +45,11 @@ export function LastTimeCollapsible({
         />
       </summary>
 
-      <div className="space-y-3 border-t border-border px-4 pb-4 pt-3">
+      <div
+        className={`space-y-3 border-t border-border pt-3 ${
+          embedded ? "px-0 pb-1" : "px-4 pb-4"
+        }`}
+      >
         <div className="space-y-1">
           {previousSets.map((s, i) => {
             const isCurrent = i === setNumber - 1;

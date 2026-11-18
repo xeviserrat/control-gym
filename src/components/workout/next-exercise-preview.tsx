@@ -1,19 +1,22 @@
-import { formatRepRange, formatWeight } from "@/lib/utils";
+import { LastTimeCollapsible } from "@/components/workout/last-time-collapsible";
+import { formatRepRange } from "@/lib/utils";
+import { getExerciseTrainingHint } from "@/lib/workout/progression-results";
 import type { WorkoutStep } from "@/lib/workout/steps";
 
 interface NextExercisePreviewProps {
   nextStep: WorkoutStep;
   currentStep: WorkoutStep;
-  previousSet?: { weight: number; reps: number };
+  previousSets?: { weight: number; reps: number }[];
 }
 
 export function NextExercisePreview({
   nextStep,
   currentStep,
-  previousSet,
+  previousSets,
 }: NextExercisePreviewProps) {
   const isSameExercise =
     nextStep.workoutExerciseId === currentStep.workoutExerciseId;
+  const hasPrevious = Boolean(previousSets && previousSets.length > 0);
 
   return (
     <div className="rounded-2xl border border-border bg-surface px-4 py-4">
@@ -27,10 +30,22 @@ export function NextExercisePreview({
         Serie {nextStep.setNumber} / {nextStep.totalSets} ·{" "}
         {formatRepRange(nextStep.repsMin, nextStep.repsMax)} reps
       </p>
-      {previousSet && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          Última vez: {formatWeight(previousSet.weight)} kg × {previousSet.reps}
-        </p>
+      {hasPrevious && previousSets && (
+        <div className="mt-4">
+          <LastTimeCollapsible
+            embedded
+            setNumber={nextStep.setNumber}
+            previousSets={previousSets}
+            trainingHint={getExerciseTrainingHint(
+              nextStep.exerciseName,
+              previousSets,
+              nextStep.repsMin,
+              nextStep.repsMax,
+              nextStep.loadProgression,
+              nextStep.setNumber,
+            )}
+          />
+        </div>
       )}
     </div>
   );
