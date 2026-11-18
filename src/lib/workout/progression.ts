@@ -338,3 +338,13 @@ export function getProgressionMessage(result: ProgressionResult): {
 export function calculateVolume(sets: { weight: number; reps: number }[]): number {
   return sets.reduce((acc, s) => acc + s.weight * s.reps, 0);
 }
+
+export function calculateWorkoutVolume(
+  exercises: { sets: { weight: number | { toString(): string }; reps: number }[] }[],
+): number {
+  return calculateVolume(
+    exercises.flatMap(({ sets }) =>
+      sets.map(({ weight, reps }) => ({ weight: Number(weight), reps })),
+    ),
+  );
+}

@@ -2,7 +2,8 @@ import { AppLink } from "@/components/ui/app-link";
 import { AppHeader } from "@/components/layout/app-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getWorkouts } from "@/lib/actions/workouts";
-import { formatDate, formatDuration } from "@/lib/utils";
+import { formatDate, formatDuration, formatWeight } from "@/lib/utils";
+import { calculateWorkoutVolume } from "@/lib/workout/progression";
 
 export default async function HistoryPage() {
   const workouts = await getWorkouts();
@@ -24,23 +25,28 @@ export default async function HistoryPage() {
                 0,
               );
 
+              const totalVolume = calculateWorkoutVolume(workout.exercises);
+
               return (
                 <li key={workout.id}>
                   <AppLink
                     href={`/history/${workout.id}`}
                     className="block rounded-2xl border border-border bg-surface px-4 py-4 hover:bg-surface-elevated"
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold">{workout.routine.name}</p>
                         <p className="mt-0.5 text-sm text-muted-foreground">
                           {formatDate(workout.date)}
                         </p>
                       </div>
-                      <div className="text-right text-sm text-muted-foreground">
+                      <div className="shrink-0 text-right text-sm text-muted-foreground">
                         {workout.durationSeconds &&
                           formatDuration(workout.durationSeconds)}
                         <p className="text-xs">{totalSets} series</p>
+                        <p className="mt-1 font-medium text-foreground">
+                          Volumen total · {formatWeight(totalVolume)} kg
+                        </p>
                       </div>
                     </div>
                   </AppLink>
