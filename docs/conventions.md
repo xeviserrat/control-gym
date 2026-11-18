@@ -42,3 +42,7 @@
 
 - Server Actions: verb + noun (`createRoutine`, `completeSet`)
 - Routes: lowercase, Spanish UI labels
+
+## Git
+
+- Feature PRs target **`preview`**; releases **`preview` → `main`**. See [git-workflow.md](./git-workflow.md).

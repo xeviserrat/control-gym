@@ -1,0 +1,15 @@
+---
+description: Branching and PR targets — preview before main
+alwaysApply: true
+---
+
+# Git workflow (control-gym)
+
+- **Never** open feature/fix PRs directly against `main`.
+- Default PR base: **`preview`** (integración y Vercel Preview).
+- Release to production: PR **`preview` → `main`** only, after preview is validated.
+- Branch naming: `feat/…`, `fix/…`, etc., cut from latest `preview`.
+- After merging to `main`, sync `preview` with `main` unless documented hotfix exception.
+- See `docs/git-workflow.md` for commands and hotfix policy.
+
+When creating PRs with `gh pr create`, always pass `--base preview` unless the user explicitly requests a release PR to `main`.
