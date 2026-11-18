@@ -414,6 +414,8 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
                     label="Cambiar ejercicio"
                     excludeExerciseId={currentStep.exerciseId}
                     defaultOpen
+                    allowCreate
+                    createSubmitLabel="Crear y sustituir"
                     onCancel={() => setShowSwapPicker(false)}
                   />
                 </div>
