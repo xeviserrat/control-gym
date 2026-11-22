@@ -3,7 +3,7 @@
 ## Antes de empezar
 
 - Lee `AGENTS.md`, el [índice](../README.md), el [plan](../pendientes.md), la spec del encargo y su ADR si existe.
-- Trabaja en una rama propia desde `preview` según el [flujo Git](../git-workflow.md). Usa el identificador del encargo en la rama o la PR.
+- Antes de escribir código para cada funcionalidad nueva, crea una rama específica desde `preview` según el [flujo Git](../git-workflow.md). Usa el identificador del encargo en la rama o la PR.
 - Identifica los puntos de entrada, el comportamiento que debe conservarse y las comprobaciones de aceptación. Eleva al revisor las decisiones que cambien el alcance o el comportamiento acordado.
 
 ## Durante el encargo
