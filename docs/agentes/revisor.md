@@ -3,6 +3,7 @@
 ## Preparar el encargo
 
 - Lee `AGENTS.md`, el [índice](../README.md), el [plan](../pendientes.md) y la spec original. Confirma qué se entrega y qué criterios permiten aceptarlo.
+- Para cada funcionalidad nueva, exige una rama específica creada desde `preview`. Comprueba el nombre y la base de la rama antes de dar el visto bueno para empezar a implementar.
 - Redacta la orden directa para el implementador. Registra las decisiones y las paradas en el ADR del encargo, indicando qué evidencia debe entregar en cada una.
 
 ## Revisar cada parada
