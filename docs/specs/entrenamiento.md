@@ -52,6 +52,16 @@ Estas specs describen trabajo pendiente. El [documento de pendientes](../pendien
 
 **Aceptación.** Si para un press el usuario indica que solo tiene mancuernas, aparecen primero alternativas compatibles para pecho. Una preferencia anterior por una máquina no desplaza las opciones disponibles y la rutina original conserva su ejercicio.
 
+## Semana de descarga
+
+**Objetivo.** Avisar al usuario de cuándo toca reducir la carga de entrenamiento según la frecuencia que configure.
+
+- En Perfil, permitir activar los avisos y elegir un intervalo en semanas enteras, con un mínimo de dos. Guardar la configuración por usuario. Los avisos están desactivados por defecto.
+- Contar semanas de lunes a domingo en la hora local del usuario. La semana de activación cuenta como semana 1 y la última semana de cada ciclo es de descarga. Cambiar el intervalo conserva la semana de inicio. Desactivar y volver a activar los avisos inicia un nuevo ciclo.
+- Mostrar en Inicio y Entrenar «La próxima semana toca descarga» durante la semana anterior y «Esta semana toca descarga» durante la semana de descarga. Ocultar el aviso el resto de semanas y cuando esté desactivado. El usuario decide cómo ajustar el entrenamiento.
+
+**Aceptación.** Con un intervalo de cuatro semanas, la semana 3 muestra el aviso de la próxima semana y la semana 4 muestra el aviso de la semana actual. Los avisos se repiten en las semanas 7 y 8. Al desactivarlos, desaparecen.
+
 ## Entrenar sin cobertura
 
 **Objetivo.** Empezar una rutina descargada, registrar series y cerrar la sesión sin conexión.
