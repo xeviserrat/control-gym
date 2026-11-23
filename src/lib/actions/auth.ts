@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfile } from "@/lib/auth";
+import { invitationDestination } from "@/lib/invitations/navigation";
 import { getSiteUrl } from "@/lib/site-url";
 import {
   forgotPasswordSchema,
@@ -10,7 +11,7 @@ import {
   registerSchema,
 } from "@/lib/validations/auth";
 
-export async function loginAction(formData: FormData) {
+export async function loginAction(invite: string | undefined, formData: FormData) {
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -29,10 +30,10 @@ export async function loginAction(formData: FormData) {
     await ensureProfile(data.user.id, data.user.email ?? parsed.data.email);
   }
 
-  redirect("/dashboard");
+  redirect(invitationDestination(invite) ?? "/dashboard");
 }
 
-export async function registerAction(formData: FormData) {
+export async function registerAction(invite: string | undefined, formData: FormData) {
   const parsed = registerSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -44,18 +45,26 @@ export async function registerAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const destination = invitationDestination(invite);
+  const callback = destination ? new URL("/auth/callback", await getSiteUrl()) : null;
+  if (callback && destination) callback.searchParams.set("next", destination);
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
+    options: callback ? { emailRedirectTo: callback.href } : undefined,
   });
 
   if (error) return { error: error.message };
+
+  if (destination && !data.session) {
+    return { success: true, message: "Revisa tu correo y abre la confirmación en este mismo navegador para volver a la invitación." };
+  }
 
   if (data.user) {
     await ensureProfile(data.user.id, parsed.data.email);
   }
 
-  redirect("/dashboard");
+  redirect(destination ?? "/dashboard");
 }
 
 export async function forgotPasswordAction(formData: FormData) {

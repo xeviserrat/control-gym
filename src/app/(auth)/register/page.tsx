@@ -1,17 +1,19 @@
 import { redirect } from "next/navigation";
 import { AuthForm, AuthLink } from "@/components/auth/auth-form";
 import { registerAction } from "@/lib/actions/auth";
+import { invitationAuthHref, invitationDestination } from "@/lib/invitations/navigation";
 import { getSessionUser } from "@/lib/auth";
 
-export default async function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ invite?: string }> }) {
+  const { invite } = await searchParams;
   const user = await getSessionUser();
-  if (user) redirect("/dashboard");
+  if (user) redirect(invitationDestination(invite) ?? "/dashboard");
 
   return (
     <AuthForm
       title="Crear cuenta"
       subtitle="Empieza a registrar tus entrenamientos"
-      action={registerAction}
+      action={registerAction.bind(null, invite)}
       submitLabel="Registrarse"
       fields={[
         { name: "email", label: "Email", type: "email", autoComplete: "email" },
@@ -30,7 +32,7 @@ export default async function RegisterPage() {
       ]}
       footer={
         <p className="text-muted-foreground">
-          ¿Ya tienes cuenta? <AuthLink href="/login">Inicia sesión</AuthLink>
+          ¿Ya tienes cuenta? <AuthLink href={invitationAuthHref("/login", invite)}>Inicia sesión</AuthLink>
         </p>
       }
     />

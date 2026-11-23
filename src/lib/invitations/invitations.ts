@@ -8,6 +8,10 @@ const day = 24 * 60 * minute;
 const recipientSchema = z.string().trim().toLowerCase().max(254).email();
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
 
+export function isInvitationToken(token: string) {
+  return tokenPattern.test(token);
+}
+
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -65,7 +69,7 @@ export async function createInvitation(email: unknown) {
 export async function acceptInvitation(token: string) {
   const account = await getSessionUser();
   if (!account) return { status: "unauthenticated" } as const;
-  if (!tokenPattern.test(token)) return { status: "invalid_token" } as const;
+  if (!isInvitationToken(token)) return { status: "invalid_token" } as const;
 
   return prisma.$transaction(async (tx) => {
     // Lock first so expiration is checked after any competing acceptance finishes.
@@ -107,4 +111,30 @@ export async function acceptInvitation(token: string) {
       ? { status: "accepted", acceptedAt: accepted.acceptedAt } as const
       : { status: "expired" } as const;
   }, { isolationLevel: "ReadCommitted" });
+}
+
+export async function getInvitationStatus(token: string) {
+  if (!isInvitationToken(token)) return "invalid_token";
+  const [invitation] = await prisma.$queryRaw<{
+    recipientEmail: string;
+    acceptedById: string | null;
+    expired: boolean;
+  }[]>`
+    SELECT recipient_email AS "recipientEmail", accepted_by_id AS "acceptedById",
+      expires_at <= clock_timestamp() AS expired
+    FROM user_invitations
+    WHERE token_hash = ${hashToken(token)}
+  `;
+  if (!invitation) return "invalid_token";
+
+  const account = await getSessionUser();
+  const matchingEmail = account?.email?.trim().toLowerCase() === invitation.recipientEmail;
+  if (account?.id === invitation.acceptedById && matchingEmail && account.email_confirmed_at) {
+    return "accepted";
+  }
+  if (invitation.expired) return "expired";
+  if (!account) return "unauthenticated";
+  if (!matchingEmail || invitation.acceptedById) return "wrong_account";
+  if (!account.email_confirmed_at) return "unverified_email";
+  return "pending";
 }
