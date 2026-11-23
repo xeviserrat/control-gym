@@ -14,8 +14,8 @@ Cada fila es un encargo para un futuro agente. Todas las tareas están pendiente
 
 | Estado | Encargo | Entrega |
 |---|---|---|
-| [ ] | **CG-04 · Invitación por email** | Resolver las decisiones de correo e implementar envío, enlace, autenticación y aceptación. [Spec](./specs/invitaciones.md) |
-| [ ] | **CG-05 · Rutina adjunta** | Incorporar la captura y copia de rutinas, incluida la entrada desde la rutina. Depende de CG-04. [Spec](./specs/invitaciones.md#reglas) |
+| [ ] | **CG-04 · Invitaciones de usuarios** | Crear y compartir manualmente un enlace con caducidad y aceptar con el correo verificado. [Spec](./specs/invitaciones.md) |
+| [ ] | **CG-05 · Rutina adjunta** | Incorporar la captura y copia de rutinas, incluida la entrada desde la rutina. Depende de CG-04. [Spec](./specs/invitaciones.md#cg-05--rutina-adjunta) |
 
 ## Fase 3 · Adaptar el entrenamiento
 
