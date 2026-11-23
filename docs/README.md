@@ -20,4 +20,4 @@
 
 - [Pendientes por fases](./pendientes.md)
 - [Specs de entrenamiento](./specs/entrenamiento.md)
-- [Spec de invitaciones por email](./specs/invitaciones.md)
+- [Spec de invitaciones de usuarios](./specs/invitaciones.md)

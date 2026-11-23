@@ -1,3 +1,4 @@
+import { invitationDestination } from "@/lib/invitations/navigation";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -36,6 +37,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/forgot-password");
   const isPublicRoute =
     isAuthRoute ||
+    pathname === "/invite" || pathname.startsWith("/invite/") ||
     pathname.startsWith("/auth") ||
     pathname === "/" ||
     pathname === "/~offline";
@@ -47,8 +49,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    const destination = invitationDestination(request.nextUrl.searchParams.get("invite"));
+    const url = destination ? new URL(destination, request.url) : request.nextUrl.clone();
+    if (!destination) url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

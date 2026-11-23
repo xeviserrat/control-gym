@@ -18,8 +18,25 @@ model Profile {
   routines         Routine[]
   workouts         Workout[]
   supersetGroups   SupersetGroup[]
+  sentInvitations  UserInvitation[]
 
   @@map("profiles")
+}
+
+model UserInvitation {
+  id             String    @id @default(uuid()) @db.Uuid
+  tokenHash      String    @unique @map("token_hash")
+  senderId       String    @map("sender_id") @db.Uuid
+  recipientEmail String    @map("recipient_email")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  acceptedById   String?   @map("accepted_by_id") @db.Uuid
+  acceptedAt     DateTime? @map("accepted_at") @db.Timestamptz(3)
+
+  sender Profile @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, createdAt])
+  @@map("user_invitations")
 }
 
 model Exercise {

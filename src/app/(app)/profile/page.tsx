@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { ThemeSelector } from "@/components/profile/theme-selector";
+import { InvitationForm } from "@/components/profile/invitation-form";
 import { LogoutButton } from "@/components/profile/logout-button";
 import { requireUser } from "@/lib/auth";
 
@@ -24,6 +25,7 @@ export default async function ProfilePage() {
           <ThemeSelector />
         </section>
 
+        <InvitationForm />
         <LogoutButton />
       </main>
     </>
