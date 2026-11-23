@@ -2,8 +2,10 @@
 
 import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
+import { PersonalRecordsList } from "@/components/workout/personal-records-list";
 import { ProgressionResultsList } from "@/components/workout/progression-results-list";
 import { formatDate, formatDuration, formatWeight } from "@/lib/utils";
+import type { PersonalRecord } from "@/lib/workout/personal-records";
 import type { ProgressionResultItem } from "@/lib/workout/progression-results";
 
 interface WorkoutSummaryProps {
@@ -13,12 +15,14 @@ interface WorkoutSummaryProps {
     durationSeconds: number;
     routine: { name: string };
     exercises: {
+      exerciseId: string;
       skipped: boolean;
       exercise: { name: string };
       sets: { weight: number; reps: number; setNumber: number }[];
     }[];
   };
   progressionResults: ProgressionResultItem[];
+  personalRecords: PersonalRecord[];
   totalSets: number;
   totalVolume: number;
 }
@@ -26,6 +30,7 @@ interface WorkoutSummaryProps {
 export function WorkoutSummary({
   workout,
   progressionResults,
+  personalRecords,
   totalSets,
   totalVolume,
 }: WorkoutSummaryProps) {
@@ -49,6 +54,8 @@ export function WorkoutSummary({
           <p className="text-xs text-muted-foreground">Volumen (kg)</p>
         </div>
       </div>
+
+      <PersonalRecordsList records={personalRecords} exercises={workout.exercises} className="mt-6" />
 
       <div className="mt-6">
         <ProgressionResultsList results={progressionResults} />

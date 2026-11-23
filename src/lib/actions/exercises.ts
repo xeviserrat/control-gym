@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser, actionError, actionSuccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { exerciseSchema } from "@/lib/validations/exercise";
+import { getExercisePersonalMarks } from "@/lib/workout/personal-records-data";
 
 export async function getExercises() {
   const user = await requireUser();
@@ -28,25 +29,28 @@ export async function getExerciseById(id: string) {
 
   if (!exercise) return null;
 
-  const history = await prisma.workoutSet.findMany({
-    where: {
-      workoutExercise: {
-        exerciseId: id,
-        workout: { userId: user.id, status: "COMPLETED" },
-      },
-    },
-    include: {
-      workoutExercise: {
-        include: {
-          workout: { select: { date: true, id: true } },
+  const [history, personalMarks] = await Promise.all([
+    prisma.workoutSet.findMany({
+      where: {
+        workoutExercise: {
+          exerciseId: id,
+          workout: { userId: user.id, status: "COMPLETED" },
         },
       },
-    },
-    orderBy: { completedAt: "desc" },
-    take: 50,
-  });
+      include: {
+        workoutExercise: {
+          include: {
+            workout: { select: { date: true, id: true } },
+          },
+        },
+      },
+      orderBy: { completedAt: "desc" },
+      take: 50,
+    }),
+    getExercisePersonalMarks(user.id, id),
+  ]);
 
-  return { exercise, history };
+  return { exercise, history, personalMarks };
 }
 
 export async function createExercise(formData: FormData) {
