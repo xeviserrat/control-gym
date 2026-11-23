@@ -3,7 +3,8 @@ import { AppHeader } from "@/components/layout/app-header";
 import { ExerciseSessionSets } from "@/components/workout/exercise-session-sets";
 import { PersonalRecordsList } from "@/components/workout/personal-records-list";
 import { getCompletedWorkoutSummary } from "@/lib/actions/workouts";
-import { formatDate, formatDuration } from "@/lib/utils";
+import { formatDate, formatDuration, formatWeight } from "@/lib/utils";
+import { calculateWorkoutVolume } from "@/lib/workout/progression";
 
 export default async function WorkoutDetailPage({
   params,
@@ -18,6 +19,8 @@ export default async function WorkoutDetailPage({
     0,
   );
 
+  const totalVolume = calculateWorkoutVolume(workout.exercises);
+
   return (
     <>
       <AppHeader title="Detalle" backHref="/history" />
@@ -29,6 +32,9 @@ export default async function WorkoutDetailPage({
             {workout.durationSeconds &&
               ` · ${formatDuration(workout.durationSeconds)}`}
             {` · ${totalSets} series`}
+          </p>
+          <p className="mt-1 text-sm font-medium">
+            Volumen total · {formatWeight(totalVolume)} kg
           </p>
         </div>
 

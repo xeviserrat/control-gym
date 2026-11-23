@@ -9,7 +9,7 @@ import {
   swapWorkoutExerciseSchema,
 } from "@/lib/validations/workout";
 import { buildWorkoutSteps, countTotalSteps } from "@/lib/workout/steps";
-import { calculateVolume } from "@/lib/workout/progression";
+import { calculateWorkoutVolume } from "@/lib/workout/progression";
 import {
   computeStartTrainingHints,
   computeWorkoutProgressionResults,
@@ -35,7 +35,8 @@ export async function getActiveWorkout() {
 
   return prisma.workout.findFirst({
     where: { userId: user.id, status: "IN_PROGRESS" },
-    include: workoutInclude,
+    orderBy: [{ startedAt: "desc" }, { id: "desc" }],
+    select: { id: true, routine: { select: { name: true } } },
   });
 }
 
@@ -137,7 +138,7 @@ export async function getWorkoutSession(
   const user = await requireUser();
 
   const workout = await prisma.workout.findFirst({
-    where: { id: workoutId, userId: user.id },
+    where: { id: workoutId, userId: user.id, status: { not: "CANCELLED" } },
     include: workoutInclude,
   });
   if (!workout) return null;
@@ -519,14 +520,7 @@ export async function finishWorkout(workoutId: string) {
     (acc, we) => acc + we.sets.length,
     0,
   );
-  const totalVolume = workout.exercises.reduce(
-    (acc, we) =>
-      acc +
-      calculateVolume(
-        we.sets.map((s) => ({ weight: Number(s.weight), reps: s.reps })),
-      ),
-    0,
-  );
+  const totalVolume = calculateWorkoutVolume(workout.exercises);
 
   return actionSuccess({
     durationSeconds,
@@ -571,17 +565,14 @@ export async function getRoutineStartHints(routineId: string) {
 export async function cancelWorkout(workoutId: string) {
   const user = await requireUser();
 
-  const workout = await prisma.workout.findFirst({
+  const { count } = await prisma.workout.updateMany({
     where: { id: workoutId, userId: user.id, status: "IN_PROGRESS" },
-  });
-  if (!workout) return actionError("Entrenamiento no encontrado");
-
-  await prisma.workout.update({
-    where: { id: workoutId },
     data: { status: "CANCELLED", completedAt: new Date() },
   });
 
   revalidatePath("/train");
+  revalidatePath(`/train/${workoutId}`);
+  if (!count) return actionError("Entrenamiento no encontrado");
   return actionSuccess(undefined);
 }
 

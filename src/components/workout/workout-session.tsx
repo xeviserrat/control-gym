@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { usePendingAction } from "@/hooks/use-pending-action";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AppLink } from "@/components/ui/app-link";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { NextExercisePreview } from "@/components/workout/next-exercise-preview";
@@ -270,7 +271,10 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
 
   if (!currentStep) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
+        <AppLink href="/dashboard" className="text-sm text-muted-foreground">
+          Salir del entrenamiento
+        </AppLink>
         <Button
           onClick={handleFinish}
           size="lg"
@@ -298,6 +302,11 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="border-b border-border px-4 py-3">
+        <div className="mb-2">
+          <AppLink href="/dashboard" className="text-sm text-muted-foreground">
+            Salir del entrenamiento
+          </AppLink>
+        </div>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-muted-foreground">
             {session.workout.routine.name}
@@ -375,6 +384,8 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
                     label="Cambiar ejercicio"
                     excludeExerciseId={currentStep.exerciseId}
                     defaultOpen
+                    allowCreate
+                    createSubmitLabel="Crear y sustituir"
                     onCancel={() => setShowSwapPicker(false)}
                   />
                 </div>

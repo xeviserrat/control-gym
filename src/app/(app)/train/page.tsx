@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
 import { getActiveWorkout } from "@/lib/actions/workouts";
 import { getRoutines } from "@/lib/actions/routines";
+import { PendingWorkout } from "@/components/workout/pending-workout";
 import { TrainSetup } from "@/components/workout/train-setup";
 
 export default async function TrainPage({
@@ -12,7 +12,18 @@ export default async function TrainPage({
   const activeWorkout = await getActiveWorkout();
 
   if (activeWorkout) {
-    redirect(`/train/${activeWorkout.id}`);
+    return (
+      <>
+        <AppHeader title="Let's Train" />
+        <main className="px-4 py-6">
+          <PendingWorkout
+            key={activeWorkout.id}
+            workoutId={activeWorkout.id}
+            routineName={activeWorkout.routine.name}
+          />
+        </main>
+      </>
+    );
   }
 
   const routines = await getRoutines();
