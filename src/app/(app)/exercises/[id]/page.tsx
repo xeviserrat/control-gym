@@ -6,6 +6,14 @@ import { requireUser } from "@/lib/auth";
 import { getExerciseById } from "@/lib/actions/exercises";
 import { formatDate, formatWeight } from "@/lib/utils";
 
+const repRanges = [
+  { label: "0 repeticiones", min: 0, max: 0 },
+  { label: "1–5 repeticiones", min: 1, max: 5 },
+  { label: "6–10 repeticiones", min: 6, max: 10 },
+  { label: "11–15 repeticiones", min: 11, max: 15 },
+  { label: "16+ repeticiones", min: 16, max: Infinity },
+];
+
 export default async function ExerciseDetailPage({
   params,
 }: { params: Promise<{ id: string }> }) {
@@ -14,7 +22,7 @@ export default async function ExerciseDetailPage({
   const data = await getExerciseById(id);
   if (!data) notFound();
 
-  const { exercise, history } = data;
+  const { exercise, history, personalMarks } = data;
   const canEdit = exercise.userId === user.id && !exercise.isGlobal;
 
   const sessionsMap = new Map<
@@ -54,6 +62,33 @@ export default async function ExerciseDetailPage({
         <ExerciseDetailPanel exercise={exercise} canEdit={canEdit} />
 
         {chartData.length > 1 && <ExerciseHistoryChart data={chartData} />}
+
+        {personalMarks.length > 0 && (
+          <section aria-labelledby="personal-marks-heading">
+            <h2 id="personal-marks-heading" className="mb-3 text-sm font-medium text-muted-foreground">
+              Mejores marcas
+            </h2>
+            <div className="space-y-4 rounded-xl border border-border bg-surface px-4 py-3">
+              {repRanges.map(({ label, min, max }) => {
+                const marks = personalMarks.filter(({ reps }) => reps >= min && reps <= max);
+                if (marks.length === 0) return null;
+
+                return (
+                  <div key={label}>
+                    <h3 className="text-sm font-medium">{label}</h3>
+                    <ul className="mt-1 space-y-1 text-sm text-muted-foreground">
+                      {marks.map(({ reps, weight }) => (
+                        <li key={reps} className="tabular-nums">
+                          {weight.toLocaleString("es-ES", { maximumFractionDigits: 2 })} kg × {reps}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section>
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">

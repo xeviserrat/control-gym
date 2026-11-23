@@ -26,7 +26,6 @@ import {
 } from "@/lib/actions/workouts";
 import type { WorkoutSessionData } from "@/lib/workout/types";
 import type { WorkoutStep } from "@/lib/workout/steps";
-import type { ProgressionResultItem } from "@/lib/workout/progression-results";
 
 const STORAGE_KEY = "workout-session-state";
 
@@ -110,12 +109,8 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
 
   useWorkoutGuard(phase !== "summary");
   const [justCompleted, setJustCompleted] = useState(false);
-  const [finishData, setFinishData] = useState<{
-    durationSeconds: number;
-    totalSets: number;
-    totalVolume: number;
-    progressionResults: ProgressionResultItem[];
-  } | null>(null);
+  type FinishResult = Extract<Awaited<ReturnType<typeof finishWorkout>>, { success: true }>;
+  const [finishData, setFinishData] = useState<FinishResult["data"] | null>(null);
 
   const inputValuesRef = useRef<SetInputValues>({ weight: "", reps: "" });
   const [canSubmit, setCanSubmit] = useState(false);
@@ -267,6 +262,7 @@ export function WorkoutSession({ session, exercises }: WorkoutSessionProps) {
           durationSeconds: finishData.durationSeconds,
         }}
         progressionResults={finishData.progressionResults}
+        personalRecords={finishData.personalRecords}
         totalSets={finishData.totalSets}
         totalVolume={finishData.totalVolume}
       />

@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
 import { ExerciseSessionSets } from "@/components/workout/exercise-session-sets";
-import { getWorkoutById } from "@/lib/actions/workouts";
+import { PersonalRecordsList } from "@/components/workout/personal-records-list";
+import { getCompletedWorkoutSummary } from "@/lib/actions/workouts";
 import { formatDate, formatDuration, formatWeight } from "@/lib/utils";
 import { calculateWorkoutVolume } from "@/lib/workout/progression";
 
@@ -9,8 +10,9 @@ export default async function WorkoutDetailPage({
   params,
 }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const workout = await getWorkoutById(id);
-  if (!workout || workout.status !== "COMPLETED") notFound();
+  const summary = await getCompletedWorkoutSummary(id);
+  if (!summary) notFound();
+  const { workout, personalRecords } = summary;
 
   const totalSets = workout.exercises.reduce(
     (acc, we) => acc + we.sets.length,
@@ -35,6 +37,8 @@ export default async function WorkoutDetailPage({
             Volumen total · {formatWeight(totalVolume)} kg
           </p>
         </div>
+
+        <PersonalRecordsList records={personalRecords} exercises={workout.exercises} />
 
         <div className="space-y-6">
           {workout.exercises

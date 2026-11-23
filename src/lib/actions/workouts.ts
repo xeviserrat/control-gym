@@ -14,6 +14,7 @@ import {
   computeStartTrainingHints,
   computeWorkoutProgressionResults,
 } from "@/lib/workout/progression-results";
+import { getWorkoutPersonalRecords } from "@/lib/workout/personal-records-data";
 import { mapWorkoutSession } from "@/lib/workout/map-session";
 import type { WorkoutSessionData } from "@/lib/workout/types";
 
@@ -57,13 +58,17 @@ export async function getWorkouts(limit = 50) {
   });
 }
 
-export async function getWorkoutById(id: string) {
+export async function getCompletedWorkoutSummary(id: string) {
   const user = await requireUser();
 
-  return prisma.workout.findFirst({
-    where: { id, userId: user.id },
+  const workout = await prisma.workout.findFirst({
+    where: { id, userId: user.id, status: "COMPLETED" },
     include: workoutInclude,
   });
+  if (!workout) return null;
+
+  const personalRecords = await getWorkoutPersonalRecords(user.id, workout.id);
+  return { workout, personalRecords };
 }
 
 export async function startWorkout(routineId: string, date: string) {
@@ -490,16 +495,20 @@ export async function finishWorkout(workoutId: string) {
     (completedAt.getTime() - workout.startedAt.getTime()) / 1000,
   );
 
-  const { count } = await prisma.workout.updateMany({
-    where: { id: workoutId, userId: user.id, status: "IN_PROGRESS" },
-    data: {
-      status: "COMPLETED",
-      completedAt,
-      durationSeconds,
-    },
-  });
+  const personalRecords = await prisma.$transaction(async (transaction) => {
+    const updated = await transaction.workout.updateMany({
+      where: { id: workoutId, userId: user.id, status: "IN_PROGRESS" },
+      data: {
+        status: "COMPLETED",
+        completedAt,
+        durationSeconds,
+      },
+    });
+    if (updated.count === 0) return null;
 
-  if (!count) return actionError("Entrenamiento no encontrado");
+    return getWorkoutPersonalRecords(user.id, workoutId, transaction);
+  });
+  if (!personalRecords) return actionError("Entrenamiento no encontrado");
 
   const progressionResults = computeWorkoutProgressionResults(workout.exercises);
 
@@ -518,6 +527,7 @@ export async function finishWorkout(workoutId: string) {
     totalSets,
     totalVolume,
     progressionResults,
+    personalRecords,
   });
 }
 
