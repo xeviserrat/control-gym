@@ -10,6 +10,12 @@
 | [git-workflow.md](./git-workflow.md) | Branches: PR → preview → main |
 | [e2e-ci.md](./e2e-ci.md) | E2E tests and GitHub Actions CI |
 
+## Trabajo con agentes
+
+- [Agente implementador](./agentes/implementador.md)
+- [Agente revisor](./agentes/revisor.md)
+- [ADR de CG-01 · Récords personales](./adr/CG-01-records-personales.md)
+
 ## Planned work
 
 - [Pendientes por fases](./pendientes.md)
