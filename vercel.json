@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "node -e 'const ref = \"zzeyijpqfpvomdujhxrl\"; if (process.env.VERCEL_ENV !== \"preview\") process.exit(1); for (const name of [\"DATABASE_URL\",\"DIRECT_URL\"]) { let u; try { u = new URL(process.env[name]); } catch {} if (!u || ![\"postgres:\",\"postgresql:\"].includes(u.protocol) || !(u.hostname === \"db.\" + ref + \".supabase.co\" || (u.hostname.endsWith(\".pooler.supabase.com\") && decodeURIComponent(u.username) === \"postgres.\" + ref))) { console.error(name + \" does not identify control-gym-preview\"); process.exit(1); } } console.log(\"Verified Supabase Preview target\");' && npx prisma migrate deploy && npx prisma migrate status && npm run build",
+  "buildCommand": "node scripts/cg04-preview-migration.mjs && npm run build",
   "installCommand": "npm install"
 }
