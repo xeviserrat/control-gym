@@ -1,0 +1,39 @@
+name: CG-04 Preview migration
+on:
+  push:
+    branches: [ops/cg-04-preview-migration]
+    paths: [.github/workflows/cg04-preview-migration.yml]
+permissions:
+  contents: read
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - name: Validate target and apply CG-04
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || vars.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL || vars.DIRECT_URL }}
+        run: |
+          node <<'JS'
+          const ref = "zzeyijpqfpvomdujhxrl";
+          for (const key of ["DATABASE_URL", "DIRECT_URL"]) {
+            let url;
+            try { url = new URL(process.env[key]); } catch {}
+            const direct = url?.hostname === `db.${ref}.supabase.co`;
+            const pooler = url?.hostname.endsWith(".pooler.supabase.com") &&
+              decodeURIComponent(url.username) === `postgres.${ref}`;
+            if (!(direct || pooler) || !["postgres:", "postgresql:"].includes(url.protocol)) {
+              console.error(`${key} is unavailable or does not identify control-gym-preview.`);
+              process.exit(1);
+            }
+          }
+          console.log("Both database URLs identify control-gym-preview.");
+          JS
+          npx prisma migrate deploy
+          npx prisma migrate status
