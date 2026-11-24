@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "node scripts/cg04-preview-migration.mjs && npm run build",
+  "buildCommand": "npm run build",
   "installCommand": "npm install"
 }
